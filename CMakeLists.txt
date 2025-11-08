@@ -32,11 +32,13 @@ FILE(GLOB_RECURSE GUI_FILES "GUI/*")
 
 # main
 set(MAIN_FILES
+        core.h core.cpp
         main.cpp
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
-    qt_add_executable(${PROJECT}
+
+qt_add_executable(${PROJECT}
         MANUAL_FINALIZATION
         ${MAIN_FILES}
         ${COMMON_FILES}

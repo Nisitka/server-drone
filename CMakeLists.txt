@@ -1,6 +1,16 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(server-drone VERSION 0.1 LANGUAGES CXX)
+set(PROJECT server-drone)
+project(${PROJECT} VERSION 0.1 LANGUAGES CXX)
+
+# Операционная система
+if(WIN32)
+  # Windows
+  message("link to Windows...")
+else()
+  # Linux
+  message("link to Linux...")
+endif()
 
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
@@ -16,34 +26,28 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS
   Sql
   Widgets)
 
-set(PROJECT_SOURCES
+# Файлы проекта
+FILE(GLOB_RECURSE COMMON_FILES "common/*")
+FILE(GLOB_RECURSE GUI_FILES "GUI/*")
+
+# main
+set(MAIN_FILES
         main.cpp
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
-    qt_add_executable(server-drone
+    qt_add_executable(${PROJECT}
         MANUAL_FINALIZATION
-        ${PROJECT_SOURCES}
+        ${MAIN_FILES}
+        ${COMMON_FILES}
+        ${GUI_FILES}
     )
-# Define target properties for Android with Qt 6 as:
-#    set_property(TARGET server-drone APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
-#                 ${CMAKE_CURRENT_SOURCE_DIR}/android)
-# For more information, see https://doc.qt.io/qt-6/qt-add-executable.html#target-creation
-else()
-    if(ANDROID)
-        add_library(server-drone SHARED
-            ${PROJECT_SOURCES}
-        )
-# Define properties for Android with Qt 5 after find_package() calls as:
-#    set(ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android")
-    else()
-        add_executable(server-drone
-            ${PROJECT_SOURCES}
-        )
-    endif()
+  else()
+    message(error Qt version: ${QT_VERSION_MAJOR})
 endif()
 
-target_link_libraries(server-drone PRIVATE
+
+target_link_libraries(${PROJECT} PRIVATE
   Qt${QT_VERSION_MAJOR}::Sql
   Qt${QT_VERSION_MAJOR}::Widgets)
 
@@ -53,7 +57,7 @@ target_link_libraries(server-drone PRIVATE
 if(${QT_VERSION} VERSION_LESS 6.1.0)
   set(BUNDLE_ID_OPTION MACOSX_BUNDLE_GUI_IDENTIFIER com.example.server-drone)
 endif()
-set_target_properties(server-drone PROPERTIES
+set_target_properties(${PROJECT} PROPERTIES
     ${BUNDLE_ID_OPTION}
     MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
     MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
@@ -62,12 +66,12 @@ set_target_properties(server-drone PROPERTIES
 )
 
 include(GNUInstallDirs)
-install(TARGETS server-drone
+install(TARGETS ${PROJECT}
     BUNDLE DESTINATION .
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
 if(QT_VERSION_MAJOR EQUAL 6)
-    qt_finalize_executable(server-drone)
+    qt_finalize_executable(${PROJECT})
 endif()

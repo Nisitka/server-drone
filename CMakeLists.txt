@@ -21,14 +21,17 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS
   Sql
+  Network
   Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS
   Sql
+  Network
   Widgets)
 
 # Файлы проекта
 FILE(GLOB_RECURSE COMMON_FILES "common/*")
 FILE(GLOB_RECURSE GUI_FILES "GUI/*")
+FILE(GLOB_RECURSE APP_FILES "server-app/*")
 
 # main
 set(MAIN_FILES
@@ -42,6 +45,7 @@ qt_add_executable(${PROJECT}
         MANUAL_FINALIZATION
         ${MAIN_FILES}
         ${COMMON_FILES}
+        ${APP_FILES}
         ${GUI_FILES}
     )
   else()
@@ -51,6 +55,7 @@ endif()
 
 target_link_libraries(${PROJECT} PRIVATE
   Qt${QT_VERSION_MAJOR}::Sql
+  Qt${QT_VERSION_MAJOR}::Network
   Qt${QT_VERSION_MAJOR}::Widgets)
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.

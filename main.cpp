@@ -2,11 +2,14 @@
 
 #include <QDebug>
 
+#include "./server-app/server.h"
+
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
 
-    qDebug() << "Hello, server!";
+    Server server(1337);
+    server.runTest();
 
     return a.exec();
 }

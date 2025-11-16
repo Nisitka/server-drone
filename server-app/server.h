@@ -14,8 +14,17 @@ class ISocketAdapter;
 
 class Server: public QObject {
   Q_OBJECT
+
+signals:
+
+  void runSqlExecuters(const QString& host, int port,
+                       const QString& dbName,
+                       const QString& user, const QString& password);
+
 public:
   explicit Server(int nPort, QObject *parent = nullptr);
+
+    void runTest();
 
 protected:
   QTcpServer* tcpServer;
@@ -40,7 +49,13 @@ private:
   bool run(int port);
 
   //
-  QueueTaskDB taskQueue;
+  QueueTaskDB* taskQueue;
+  QList <TaskDataBaseExecutor*> sqlExecuters;
+
+  //
+  bool readConfig();
+  QMap<QString, QString> configParams;
+  QStringList expectedKeys = {"host", "port", "database", "user", "password"};
 };
 
 #endif // SERVER_H

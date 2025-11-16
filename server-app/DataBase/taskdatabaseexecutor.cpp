@@ -1,9 +1,9 @@
 #include "taskdatabaseexecutor.h"
 
 #include <QSqlError>
+#include <QUuid>
 
 TaskDataBaseExecutor::TaskDataBaseExecutor(QueueTaskDB* taskQueue_):
-    QObject(),
     taskQueue(taskQueue_)
 { /* ... */}
 
@@ -12,7 +12,8 @@ bool TaskDataBaseExecutor::connectToDataBase(const QString& host, int port,
                                              const QString& user, const QString& password)
 {
     // Создаем свое соединение с уникальным именем
-    const QString connName = "connetDB-name-" + QString::number(rand()&1000);
+    const QString connName = QUuid::createUuid().toString(QUuid::WithoutBraces);
+    //qDebug() << connName;
     db = QSqlDatabase::addDatabase("QPSQL", connName);
     db.setHostName(host);
     db.setPort(port);
@@ -28,10 +29,12 @@ bool TaskDataBaseExecutor::connectToDataBase(const QString& host, int port,
     return true;
 }
 
-void TaskDataBaseExecutor::run()
+void TaskDataBaseExecutor::run(const QString& host, int port,
+                               const QString& dbName,
+                               const QString& user, const QString& password)
 {
     /// Подключение к БД
-    if (!connectToDataBase("127.0.0.1", 1234, "nisitka", "postgres", "pass"))
+    if (!connectToDataBase(host, port, dbName, user, password))
     {
         emit error();
         return;

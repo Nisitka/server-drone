@@ -19,7 +19,9 @@ signals:
     void started();
 
 public slots:
-    void run();
+    void run(const QString& host, int port,
+             const QString& dbName,
+             const QString& user, const QString& password);
     void stop();
 
 public:

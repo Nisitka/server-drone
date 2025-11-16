@@ -9,4 +9,6 @@ HandlerMessageCommandServerMap::HandlerMessageCommandServerMap():
 bool HandlerMessageCommandServerMap::processingMessage(QByteArray &data)
 {
 
+
+    return true;
 }

@@ -19,7 +19,7 @@ public:
     virtual ~TaskDataBase(){}
 
     // Действия, которые производим с результатом SQL-запроса
-    virtual bool processRequestResult(QSqlQuery& querry) = 0;
+    virtual bool processRequestResult(QSqlQuery& query) = 0;
 };
 
 #endif // TASKDATABASE_H

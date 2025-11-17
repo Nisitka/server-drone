@@ -12,6 +12,7 @@ namespace server_protocol {
 // Типы сообщений
 enum id_message: uint8_t{
     id_msg_command_server_map, // команда для сервера, в части карты
+    id_msg_command_server_user,
     id_msg_command_client, // команда для клиента
     id_msg_text_info
 };
@@ -51,12 +52,12 @@ public:
 };
 
     // Для быстрой упаковки в QDataStream
-    QDataStream& operator<<(QDataStream& out, const protocol_message& msg)
+    inline QDataStream& operator<<(QDataStream& out, const protocol_message& msg)
     {
         out << (uint8_t)msg.id_msg << msg.data;
         return out;
     }
-    QDataStream& operator>>(QDataStream& in, protocol_message& msg)
+    inline QDataStream& operator>>(QDataStream& in, protocol_message& msg)
     {
         in >> msg.id_msg >> msg.data;
         return in;

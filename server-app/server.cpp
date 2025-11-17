@@ -12,18 +12,24 @@
 
 #include <QDebug>
 
+#include "../common/protocol/command_server_user.h"
+#include "../server-app/DataBase/Tasks/TaskUserAuth.h"
+
+using namespace server_protocol;
+
 Server::Server(int port, QObject *parent):
-    QObject(parent),
-    tcpServer(new QTcpServer(this)) {
-
+    QTcpServer(parent)
+{
     qDebug() << "Hello, drone-server!";
-
-    // Инициализируем клиента при появлении нового соединения
-    connect(tcpServer, &QTcpServer::newConnection,
-            this,      &Server::initClient);
 
     //
     taskQueue = new QueueTaskDB;
+
+    //
+    clientsManager = new ClientsManager;
+    QThread* thread = new QThread(this);
+    clientsManager->moveToThread(thread);
+    thread->start();
 
     // Обработчики задач связанных с БД
     for (int i=0; i<4; i++)
@@ -44,16 +50,102 @@ Server::Server(int port, QObject *parent):
     }
 }
 
+void Server::incomingConnection(qintptr socketDescriptor)
+{
+    // Создаем сокет в основном потоке, привязываем к нему дескриптор
+    QTcpSocket* socket = new QTcpSocket;
+    socket->setSocketDescriptor(socketDescriptor);
+
+    // Добавляем в список пытающихся ломиться в систему
+    ISocketAdapter* socketAdapter = new ServerSocketAdapter(socket);
+    notAuthSockets.append(socketAdapter);
+
+    // Взаимодействие неавторизованного клиента
+    connect(socketAdapter, &ISocketAdapter::message,
+            this,   &Server::acceptTryAuthMessage);
+    connect(socketAdapter, &ISocketAdapter::disconnected,
+            this,          &Server::removeNotAuthSocket);
+}
+
+void Server::acceptTryAuthMessage()
+{
+    ISocketAdapter* client = static_cast<ServerSocketAdapter*>(sender());
+
+    // Сообщение в сыром виде
+    const QByteArray& msg = client->getCurrentMessage();
+
+    // Обрабатываем
+    if (!msg.isEmpty()){
+        // При const QByteArray& - QIODevice::ReadOnly
+        QDataStream stream(msg);
+
+        // Тип принятого сообщения
+        uint8_t id_msg;
+        stream >> id_msg;
+
+        // Проверяем что это требуемый тип команды
+        if (id_msg == id_msg_command_server_user){
+            // Извлекаем оставшиеся данные
+            QByteArray data;
+            stream >> data; /// копирование!!!
+
+            // Из данных получаем конкретный номер команды
+            id_command_server_user id_com = command_server_user::get_command_id(data);
+
+            // Исходя из номеры команды создаем объект-команду
+            if (id_com == id_command_server_user_auth){
+                command_server_user_auth command(data); /// копирование в конструкторе!!!
+
+                // Добавляем задачу на авторизацию пользователя
+                TaskDataBase* task = new TaskUserAuth(
+                    clientsManager, client, command.Login(), command.Password()); /// копирование в конструкторе!!!
+                taskQueue->enqueue(task);
+            }
+            else{
+                qDebug() << "Server: от неавторизованного пользователя получилии команду" << id_com <<", ожидая команду" << id_command_server_user_auth;
+            }
+        }
+        else{
+            qDebug() << "Server: от неавторизованного пользователя получили сообщение не того типа!";
+        }
+    }
+    else
+        qDebug() << "Server: попытка обработать пустое сообщение!";
+}
+
+void Server::removeNotAuthSocket()
+{
+    ISocketAdapter* client = static_cast<ServerSocketAdapter*>(sender());
+    disconnect(client, &ISocketAdapter::message,
+               this,   &Server::acceptTryAuthMessage);
+    disconnect(client, &ISocketAdapter::disconnected,
+               this,          &Server::removeNotAuthSocket);
+
+    notAuthSockets.removeAll(client);
+    delete client;
+}
+
 void Server::runTest()
 {
-    while (true){
-        //taskQueue.enqueue();
+    ISocketAdapter* client = new ServerSocketAdapter(new QTcpSocket);
+
+    int i = 0;
+    while (i < 1000){
+        qDebug() << i;
+        command_server_user_auth command("djigurda", "12345678");
+        // Добавляем задачу на авторизацию пользователя
+        TaskDataBase* task = new TaskUserAuth(
+            clientsManager, client, command.Login(), command.Password()); /// копирование в конструкторе!!!
+        taskQueue->enqueue(task);
+        QThread::msleep(1);
+
+        i++;
     }
 }
 
 bool Server::run(int port)
 {
-    if (tcpServer->listen(QHostAddress::Any, port)) {
+    if (listen(QHostAddress::Any, port)) {
         emit runSqlExecuters(configParams["host"],
                              configParams["port"].toInt(),
                              configParams["database"],
@@ -62,9 +154,9 @@ bool Server::run(int port)
     }
     else
     {
-        tcpServer->close();
+        this->close();
 
-        qDebug() << "Server: не удалось запустить сервер - " << tcpServer->errorString();
+        qDebug() << "Server: не удалось запустить сервер - " << this->errorString();
         return false;
     }
 
@@ -110,65 +202,12 @@ bool Server::readConfig()
     return true;
 }
 
-void Server::initClient()
+void Server::authorClient(QTcpSocket* clientSock)
 {
     qDebug() << "init new connection...";
 
-    QTcpSocket* pclientSock = tcpServer->nextPendingConnection();
-    ISocketAdapter *pSockHandle = new ServerSocketAdapter(pclientSock);
+    /// Создание задачи на авторизацию
 
-    clients.push_back(pSockHandle);
-
-    // Отвечаем клиенту на соединение
-    ///pSockHandle->sendString("connect");
-
-    // Обработка полученных от клиента сообщений
-    connect(pSockHandle, &ISocketAdapter::message,
-          this,        &Server::acceptMessageFromSocket);
-
-
-    connect(pSockHandle, &ISocketAdapter::disconnected,
-            this,        &Server::removeClient);
-}
-
-void Server::removeClient()
-{
-  ISocketAdapter* client = static_cast<ServerSocketAdapter*>(sender());
-
-  clients.removeOne(client);
-
-  delete client;
-  qDebug() << "client removed";
-}
-
-void Server::acceptMessageFromSocket()
-{
-    ISocketAdapter* client = static_cast<ServerSocketAdapter*>(sender());
-
-    // Сообщение в сыром виде
-    const QByteArray& msg = client->getCurrentMessage();
-
-    // Обрабатываем
-    if (!msg.isEmpty())
-        processingMessage(msg);
-    else
-        qDebug() << "Server::" << "попытка обработать пустое сообщение!";
-}
-
-void Server::processingMessage(const QByteArray& msg)
-{
-    uint8_t id_msg;
-
-    // При const QByteArray& - QIODevice::ReadOnly
-    QDataStream stream(msg);
-
-    stream >> id_msg;
-    qDebug() << "processing message:" << id_msg;
-}
-
-void Server::disconnectClient(ServerSocketAdapter* socket)
-{
-    socket->disconnect();
 }
 
 //void Server::message(QString msg) {

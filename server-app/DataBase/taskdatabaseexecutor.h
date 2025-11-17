@@ -38,6 +38,7 @@ private:
     bool connectToDataBase(const QString& host, int port,
                            const QString& dbName,
                            const QString& user, const QString& password);
+    const QString connName;
 
     QMutex mutex;
     bool stopFlag;

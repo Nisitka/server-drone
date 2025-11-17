@@ -4,7 +4,8 @@
 #include <QUuid>
 
 TaskDataBaseExecutor::TaskDataBaseExecutor(QueueTaskDB* taskQueue_):
-    taskQueue(taskQueue_)
+    taskQueue(taskQueue_),
+    connName(QUuid::createUuid().toString(QUuid::WithoutBraces))
 { /* ... */}
 
 bool TaskDataBaseExecutor::connectToDataBase(const QString& host, int port,
@@ -12,8 +13,6 @@ bool TaskDataBaseExecutor::connectToDataBase(const QString& host, int port,
                                              const QString& user, const QString& password)
 {
     // Создаем свое соединение с уникальным именем
-    const QString connName = QUuid::createUuid().toString(QUuid::WithoutBraces);
-    //qDebug() << connName;
     db = QSqlDatabase::addDatabase("QPSQL", connName);
     db.setHostName(host);
     db.setPort(port);
@@ -63,6 +62,8 @@ void TaskDataBaseExecutor::run(const QString& host, int port,
 
 bool TaskDataBaseExecutor::executeTask(TaskDataBase* task)
 {
+    qDebug() << connName << "Начало выполнения задачи..." << task->stringSQL;
+
     // Выполнение SQL-запроса и обработка результатов
     QSqlQuery query(db);
     if (query.exec(task->stringSQL))
@@ -79,6 +80,7 @@ bool TaskDataBaseExecutor::executeTask(TaskDataBase* task)
         return false;
     }
 
+    delete task;
     return true;
 }
 

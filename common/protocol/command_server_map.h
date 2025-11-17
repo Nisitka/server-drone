@@ -2,8 +2,8 @@
 #define COMMAND_SERVER_MAP_H
 
 #include "./protocol_message.h"
-
 #include <QDataStream>
+#include <QIODevice>
 
 namespace server_protocol {
 

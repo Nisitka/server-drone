@@ -1,18 +1,16 @@
 #ifndef SERVER_H
 #define SERVER_H
 
-#include <QObject>
+#include <QTcpServer>
 #include <QList>
 
-#include "./Network/serversocketadapter.h"
-
+#include "./Network/clientsmanager.h"
 #include "./DataBase/taskdatabaseexecutor.h"
 
-class QTcpServer;
 class QTcpSocket;
 class ISocketAdapter;
 
-class Server: public QObject {
+class Server: public QTcpServer{
   Q_OBJECT
 
 signals:
@@ -22,40 +20,39 @@ signals:
                        const QString& user, const QString& password);
 
 public:
-  explicit Server(int nPort, QObject *parent = nullptr);
+    explicit Server(int nPort, QObject *parent = nullptr);
 
     void runTest();
 
 protected:
-  QTcpServer* tcpServer;
-  QList<ISocketAdapter*> clients;
+    //
+    void incomingConnection(qintptr socketDescriptor) override final;
 
 private slots:
-  void initClient();
-  void removeClient();
-
-  // Принять сообщение от клиента
-  void acceptMessageFromSocket();
+    void acceptTryAuthMessage();
+    void removeNotAuthSocket();
 
 private:
-//public: /// для теста!
-  //
-  void processingMessage(const QByteArray& msg);
 
-  // Инициировать отключение клиента от сервера
-  void disconnectClient(ServerSocketAdapter* socket);
+    void authorClient(QTcpSocket* clientSock);
 
-  // Запуск как сетевой службы
-  bool run(int port);
+    // Еще не авторизованные соединения
+    QList <ISocketAdapter*> notAuthSockets;
 
-  //
-  QueueTaskDB* taskQueue;
-  QList <TaskDataBaseExecutor*> sqlExecuters;
+    //
+    ClientsManager* clientsManager;
 
-  //
-  bool readConfig();
-  QMap<QString, QString> configParams;
-  QStringList expectedKeys = {"host", "port", "database", "user", "password"};
+    // Запуск как сетевой службы
+    bool run(int port);
+
+    //
+    QueueTaskDB* taskQueue;
+    QList <TaskDataBaseExecutor*> sqlExecuters;
+
+    //
+    bool readConfig();
+    QMap<QString, QString> configParams;
+    QStringList expectedKeys = {"host", "port", "database", "user", "password"};
 };
 
 #endif // SERVER_H

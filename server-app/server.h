@@ -32,14 +32,14 @@ private slots:
     void acceptTryAuthMessage();
     void removeNotAuthSocket();
 
+    // Удалить сокет из неавторизованных соединений
+    void removeSocketFromNotAuthSockets(ISocketAdapter*);
+
 private:
-
-    void authorClient(QTcpSocket* clientSock);
-
     // Еще не авторизованные соединения
     QList <ISocketAdapter*> notAuthSockets;
 
-    //
+    // Работает с авторизованными пользователями
     ClientsManager* clientsManager;
 
     // Запуск как сетевой службы

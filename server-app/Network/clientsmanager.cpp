@@ -5,7 +5,14 @@
 ClientsManager::ClientsManager():
     QObject()
 {
+    actions = new ActionsClientsManager;
+    connect(actions, &ActionsClientsManager::trInitClient,
+            this,    &ClientsManager::initClient);
+}
 
+ActionsClientsManager* ClientsManager::Actions() const
+{
+    return actions;
 }
 
 void ClientsManager::initClient(const QString& uuidClient, ISocketAdapter* socket)
@@ -15,7 +22,7 @@ void ClientsManager::initClient(const QString& uuidClient, ISocketAdapter* socke
         return ;
     }
 
-    //
+    // Сохраняем клиента
     clients[uuidClient] = socket;
 
     // Отвечаем клиенту на соединение
@@ -25,8 +32,12 @@ void ClientsManager::initClient(const QString& uuidClient, ISocketAdapter* socke
     connect(socket, &ISocketAdapter::message,
             this,   &ClientsManager::acceptMessageFromSocket);
 
+    // Удаление клиента при отключении
     connect(socket, &ISocketAdapter::disconnected,
             this,   &ClientsManager::removeClient);
+
+    // Сообщаем, что пользователь инициализирован
+    emit itializedClient(socket);
 }
 
 void ClientsManager::removeClient()
@@ -40,6 +51,8 @@ void ClientsManager::removeClient()
             break;
         }
     }
+
+    /// Задача на
 
     delete client;
     qDebug() << "client removed";

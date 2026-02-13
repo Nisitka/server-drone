@@ -2,30 +2,14 @@
 #define COMMAND_SERVER_USER_H
 
 #include "./protocol_message.h"
-#include <QDataStream>
-#include <QIODevice>
+#include "./command_server.h"
 
 namespace server_protocol {
 
-// Какие есть команды для сервера
-enum id_command_server_user: uint8_t{
-    id_command_server_user_auth
-};
-
-class command_server_user{
-public:
-
-    // Узнать какая команда связанная
-    // с картой сервера заложена в сообщение
-    static id_command_server_user get_command_id(const QByteArray& data) {
-        // id команды лежит в самом начале
-        return (id_command_server_user)static_cast<uint8_t>(data[0]);
-    }
-};
 
 // Авторизоваться на сервере:
 // логин (QString), пароль (QString)
-class command_server_user_auth{
+class command_server_user_auth: public command_server{
 public:
 
     // data разбиваются на свойства команды
@@ -41,7 +25,7 @@ public:
         login(login_), pass(pass_)
     { /* ... */}
 
-    void toByteArray(QByteArray& boxForData) const
+    void toByteArray(QByteArray& boxForData) const override final
     {
         QDataStream stream(&boxForData, QIODevice::WriteOnly);
         stream << (uint8_t)id_command_server_user_auth /// id команды, который не храним

@@ -22,11 +22,16 @@ Server::Server(int port, QObject *parent):
 {
     qDebug() << "Hello, drone-server!";
 
-    //
+    // Очередь задач
     taskQueue = new QueueTaskDB;
 
-    //
+    // Агригатор пользователей
     clientsManager = new ClientsManager;
+    /// Взаимодействие
+    // Удаляем соединения из списка неавторизованных
+    connect(clientsManager, &ClientsManager::itializedClient,
+            this,           &Server::removeSocketFromNotAuthSockets);
+
     QThread* thread = new QThread(this);
     clientsManager->moveToThread(thread);
     thread->start();
@@ -60,19 +65,21 @@ void Server::incomingConnection(qintptr socketDescriptor)
     ISocketAdapter* socketAdapter = new ServerSocketAdapter(socket);
     notAuthSockets.append(socketAdapter);
 
-    // Взаимодействие неавторизованного клиента
+    /// Взаимодействие неавторизованного клиента
+    // Попытаться авторизовать клиента через сокет
     connect(socketAdapter, &ISocketAdapter::message,
             this,   &Server::acceptTryAuthMessage);
+    // Удаление неавторизованного сокета
     connect(socketAdapter, &ISocketAdapter::disconnected,
             this,          &Server::removeNotAuthSocket);
 }
 
 void Server::acceptTryAuthMessage()
 {
-    ISocketAdapter* client = static_cast<ServerSocketAdapter*>(sender());
+    ISocketAdapter* clientSocket = static_cast<ServerSocketAdapter*>(sender());
 
     // Сообщение в сыром виде
-    const QByteArray& msg = client->getCurrentMessage();
+    const QByteArray& msg = clientSocket->getCurrentMessage();
 
     // Обрабатываем
     if (!msg.isEmpty()){
@@ -84,21 +91,24 @@ void Server::acceptTryAuthMessage()
         stream >> id_msg;
 
         // Проверяем что это требуемый тип команды
-        if (id_msg == id_msg_command_server_user){
+        if (id_msg == id_msg_command_server){
             // Извлекаем оставшиеся данные
             QByteArray data;
             stream >> data; /// копирование!!!
 
             // Из данных получаем конкретный номер команды
-            id_command_server_user id_com = command_server_user::get_command_id(data);
+            id_command_server id_com = command_server::get_command_id(data);
 
-            // Исходя из номеры команды создаем объект-команду
+            // Исходя из номера команды создаем объект-команду
             if (id_com == id_command_server_user_auth){
+                // Декодируем данные в команду
                 command_server_user_auth command(data); /// копирование в конструкторе!!!
 
-                // Добавляем задачу на авторизацию пользователя
+                // Добавляем задачу на авторизацию пользователя в очередь
                 TaskDataBase* task = new TaskUserAuth(
-                    clientsManager, client, command.Login(), command.Password()); /// копирование в конструкторе!!!
+                    clientsManager->Actions(), clientSocket,
+                    command.Login(), command.Password()); /// копирование в конструкторе!!!
+
                 taskQueue->enqueue(task);
             }
             else{
@@ -116,13 +126,19 @@ void Server::acceptTryAuthMessage()
 void Server::removeNotAuthSocket()
 {
     ISocketAdapter* client = static_cast<ServerSocketAdapter*>(sender());
+
+    removeSocketFromNotAuthSockets(client);
+    delete client;
+}
+
+void Server::removeSocketFromNotAuthSockets(ISocketAdapter* client)
+{
     disconnect(client, &ISocketAdapter::message,
                this,   &Server::acceptTryAuthMessage);
     disconnect(client, &ISocketAdapter::disconnected,
                this,          &Server::removeNotAuthSocket);
 
     notAuthSockets.removeAll(client);
-    delete client;
 }
 
 void Server::runTest()
@@ -135,7 +151,7 @@ void Server::runTest()
         command_server_user_auth command("djigurda", "12345678");
         // Добавляем задачу на авторизацию пользователя
         TaskDataBase* task = new TaskUserAuth(
-            clientsManager, client, command.Login(), command.Password()); /// копирование в конструкторе!!!
+            clientsManager->Actions(), client, command.Login(), command.Password()); /// копирование в конструкторе!!!
         taskQueue->enqueue(task);
         QThread::msleep(1);
 
@@ -200,14 +216,6 @@ bool Server::readConfig()
     }
 
     return true;
-}
-
-void Server::authorClient(QTcpSocket* clientSock)
-{
-    qDebug() << "init new connection...";
-
-    /// Создание задачи на авторизацию
-
 }
 
 //void Server::message(QString msg) {

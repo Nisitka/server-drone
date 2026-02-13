@@ -9,10 +9,9 @@
 
 namespace server_protocol {
 
-// Типы сообщений
+// Типы сообщений в протоколе
 enum id_message: uint8_t{
-    id_msg_command_server_map, // команда для сервера, в части карты
-    id_msg_command_server_user,
+    id_msg_command_server, // команда для сервера
     id_msg_command_client, // команда для клиента
     id_msg_text_info
 };
@@ -20,6 +19,7 @@ enum id_message: uint8_t{
 // Базовый класс для всех сообщений
 class protocol_message{
 public:
+    // Из чего состоят все сообщения
     QByteArray data;
     uint8_t id_msg;
 

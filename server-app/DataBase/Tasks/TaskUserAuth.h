@@ -2,7 +2,7 @@
 #define TASKUSERAUTH_H
 
 #include "./taskdatabase.h"
-#include "../../Network/clientsmanager.h"
+#include "../../Network/ActionsClientsManager.h"
 
 /// TEST
 #include <QThread>
@@ -10,7 +10,7 @@
 class TaskUserAuth: public TaskDataBase
 {
 public:
-    TaskUserAuth(ClientsManager* clientsManager_, ISocketAdapter* socket_,
+    TaskUserAuth(ActionsClientsManager* clientsManager_, ISocketAdapter* socket_,
                  const QString& login_, const QString& pass):
         TaskDataBase("SELECT __UserAuth('" + login_ + "','" + pass + "')"),
         clientsManager(clientsManager_),
@@ -20,7 +20,7 @@ public:
 
     bool processRequestResult(QSqlQuery& query) override final
     {
-        /// Имитиация долгой обработки
+        /// --- Имитиация долгой обработки ---
         QThread::msleep(500);
 
         if (!query.next()) return false;
@@ -31,7 +31,7 @@ public:
             switch (code) {
             case 0:
                 qDebug() << login << "- успешно авторизирован!";
-                clientsManager->initClient(login, socket);
+                emit clientsManager->trInitClient(login, socket);
                 break;
             case 1:
                 qDebug() << login << "- неверный логин или пароль!";
@@ -49,7 +49,7 @@ public:
     }
 
 private:
-    ClientsManager* clientsManager;
+    ActionsClientsManager* clientsManager;
     const QString login;
     ISocketAdapter* socket;
 

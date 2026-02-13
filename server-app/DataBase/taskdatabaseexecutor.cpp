@@ -64,22 +64,22 @@ bool TaskDataBaseExecutor::executeTask(TaskDataBase* task)
 {
     qDebug() << connName << "Начало выполнения задачи..." << task->stringSQL;
 
-    // Выполнение SQL-запроса и обработка результатов
+    // Выполнение SQL-запроса
     QSqlQuery query(db);
-    if (query.exec(task->stringSQL))
-    {
-        if (!task->processRequestResult(query))
-        {
+    if (query.exec(task->stringSQL)){
+
+        // Обработка результатов
+        if (!task->processRequestResult(query)){
             qDebug() << "TaskDataBaseExecutor: ошибка обработки результатов запроса:";
             return false;
         }
     }
-    else
-    {
+    else{
         qDebug() << "TaskDataBaseExecutor: ошибка запроса:" << query.lastError().text();
         return false;
     }
 
+    /// Освобождаем память от задачи
     delete task;
     return true;
 }

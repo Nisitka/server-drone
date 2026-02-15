@@ -1,11 +1,9 @@
-#ifndef COMMAND_SERVER_USER_H
-#define COMMAND_SERVER_USER_H
+#ifndef COMMAND_SERVER_USER_AUTH_H
+#define COMMAND_SERVER_USER_AUTH_H
 
-#include "./protocol_message.h"
-#include "./command_server.h"
+#include "../command_server.h"
 
 namespace server_protocol {
-
 
 // Авторизоваться на сервере:
 // логин (QString), пароль (QString)
@@ -46,4 +44,5 @@ private:
 };
 
 }
-#endif // COMMAND_SERVER_USER_H
+
+#endif // COMMAND_SERVER_USER_AUTH_H

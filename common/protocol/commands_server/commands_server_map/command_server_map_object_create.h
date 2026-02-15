@@ -1,18 +1,13 @@
-#ifndef COMMAND_SERVER_MAP_H
-#define COMMAND_SERVER_MAP_H
-
-#include "./protocol_message.h"
-#include "./command_server.h"
+#ifndef COMMAND_SERVER_MAP_OBJECT_CREATE_H
+#define COMMAND_SERVER_MAP_OBJECT_CREATE_H
 
 #include <QDataStream>
 #include <QIODevice>
 
-namespace server_protocol {
+#include "../command_server.h"
+#include "./command_server_map.h"
 
-enum type_object_map: uint8_t{
-    drone,
-    marker
-};
+namespace server_protocol {
 
 // Создать объект на карте:
 // тип ебъекта(uint8_t), координаты(double,double), имя (QString)
@@ -59,4 +54,4 @@ private:
 
 }
 
-#endif // COMMAND_SERVER_MAP_H
+#endif // COMMAND_SERVER_MAP_OBJECT_CREATE_H

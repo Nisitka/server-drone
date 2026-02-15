@@ -4,8 +4,8 @@
 #include <QObject>
 #include <QMap>
 
-#include "./serversocketadapter.h"
 #include "./ActionsClientsManager.h"
+#include "../DataBase/Tasks/queuetaskdb.h"
 
 class ClientsManager: public QObject
 {
@@ -17,7 +17,7 @@ signals:
 public slots:
 
 public:
-    ClientsManager();
+    ClientsManager(QueueTaskDB* taskQueue);
 
     ActionsClientsManager* Actions() const;
 
@@ -26,13 +26,17 @@ private slots:
     void initClient(const QString& uuid,
                     ISocketAdapter* clientSock);
 
-    void removeClient();
+    // Удалить соединение с клиентом
+    void removeClientSocket();
 
     // Принять сообщение от клиента
     void acceptMessageFromSocket();
 
 private:
     ActionsClientsManager* actions;
+
+    // Добавляем необходимые задачи
+    QueueTaskDB* taskQueue;
 
     // Клиенты по uuid-м их логинов
     QMap <QString, ISocketAdapter*> clients;

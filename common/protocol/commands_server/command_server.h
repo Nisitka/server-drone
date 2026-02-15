@@ -1,7 +1,7 @@
 #ifndef COMMAND_SERVER_H
 #define COMMAND_SERVER_H
 
-#include "./protocol_message.h"
+#include "../protocol_message.h"
 #include <QDataStream>
 #include <QIODevice>
 

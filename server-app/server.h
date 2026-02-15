@@ -29,6 +29,7 @@ protected:
     void incomingConnection(qintptr socketDescriptor) override final;
 
 private slots:
+    //
     void acceptTryAuthMessage();
     void removeNotAuthSocket();
 

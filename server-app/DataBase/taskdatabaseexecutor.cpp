@@ -12,6 +12,10 @@ bool TaskDataBaseExecutor::connectToDataBase(const QString& host, int port,
                                              const QString& dbName,
                                              const QString& user, const QString& password)
 {
+    qDebug() << host << port << dbName << user << password;
+    qDebug() << QSqlDatabase::drivers();
+
+
     // Создаем свое соединение с уникальным именем
     db = QSqlDatabase::addDatabase("QPSQL", connName);
     db.setHostName(host);

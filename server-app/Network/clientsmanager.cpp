@@ -2,8 +2,12 @@
 
 #include <QDebug>
 
-ClientsManager::ClientsManager():
-    QObject()
+//
+#include "../DataBase/Tasks/TaskUserLogOut.h"
+
+ClientsManager::ClientsManager(QueueTaskDB* taskQueue_):
+    QObject(),
+    taskQueue(taskQueue_)
 {
     actions = new ActionsClientsManager;
     connect(actions, &ActionsClientsManager::trInitClient,
@@ -34,27 +38,31 @@ void ClientsManager::initClient(const QString& uuidClient, ISocketAdapter* socke
 
     // Удаление клиента при отключении
     connect(socket, &ISocketAdapter::disconnected,
-            this,   &ClientsManager::removeClient);
+            this,   &ClientsManager::removeClientSocket);
 
     // Сообщаем, что пользователь инициализирован
     emit itializedClient(socket);
 }
 
-void ClientsManager::removeClient()
+void ClientsManager::removeClientSocket()
 {
-    ISocketAdapter* client = static_cast<ServerSocketAdapter*>(sender());
+    ISocketAdapter* clientSocket = static_cast<ServerSocketAdapter*>(sender());
 
     /// Ищем нужного клиента и удялем его
+    QString login;
     for (auto it = clients.begin(); it != clients.end(); ++it) {
-        if (it.value() == client) {
+        if (it.value() == clientSocket) {
+
+            login = it.key();
             clients.erase(it);
             break;
         }
     }
 
-    /// Задача на
+    /// Задача на обновление данных в базе
+    taskQueue->enqueue(new TaskUserLogOut(login));
 
-    delete client;
+    delete clientSocket;
     qDebug() << "client removed";
 }
 

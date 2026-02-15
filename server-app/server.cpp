@@ -12,8 +12,13 @@
 
 #include <QDebug>
 
-#include "../common/protocol/command_server_user.h"
+#include "../common/protocol/commands_server/command_server.h"
+#include "../common/protocol/commands_server/commands_server_user/command_server_user_auth.h"
+
 #include "../server-app/DataBase/Tasks/TaskUserAuth.h"
+
+/// TEST
+#include "../server-app/DataBase/Tasks/TaskUserLogOut.h"
 
 using namespace server_protocol;
 
@@ -26,19 +31,17 @@ Server::Server(int port, QObject *parent):
     taskQueue = new QueueTaskDB;
 
     // Агригатор пользователей
-    clientsManager = new ClientsManager;
+    clientsManager = new ClientsManager(taskQueue);
     /// Взаимодействие
     // Удаляем соединения из списка неавторизованных
     connect(clientsManager, &ClientsManager::itializedClient,
             this,           &Server::removeSocketFromNotAuthSockets);
-
     QThread* thread = new QThread(this);
     clientsManager->moveToThread(thread);
     thread->start();
 
     // Обработчики задач связанных с БД
-    for (int i=0; i<4; i++)
-    {
+    for (int i=0; i<4; i++){
         TaskDataBaseExecutor* executer = new TaskDataBaseExecutor(taskQueue);
         connect(this,     &Server::runSqlExecuters,
                 executer, &TaskDataBaseExecutor::run);
@@ -147,14 +150,19 @@ void Server::runTest()
 
     int i = 0;
     while (i < 1000){
-        qDebug() << i;
         command_server_user_auth command("djigurda", "12345678");
         // Добавляем задачу на авторизацию пользователя
-        TaskDataBase* task = new TaskUserAuth(
-            clientsManager->Actions(), client, command.Login(), command.Password()); /// копирование в конструкторе!!!
-        taskQueue->enqueue(task);
-        QThread::msleep(1);
+        TaskDataBase* task;
 
+        if (i%2 == 1){
+            task = new TaskUserAuth(
+                clientsManager->Actions(), client, command.Login(), command.Password()); /// копирование в конструкторе!!!
+        }
+        else{
+            task = new TaskUserLogOut(command.Login());
+        }
+
+        taskQueue->enqueue(task);
         i++;
     }
 }

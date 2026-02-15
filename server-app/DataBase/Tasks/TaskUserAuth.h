@@ -4,9 +4,6 @@
 #include "./taskdatabase.h"
 #include "../../Network/ActionsClientsManager.h"
 
-/// TEST
-#include <QThread>
-
 class TaskUserAuth: public TaskDataBase
 {
 public:
@@ -20,9 +17,6 @@ public:
 
     bool processRequestResult(QSqlQuery& query) override final
     {
-        /// --- Имитиация долгой обработки ---
-        QThread::msleep(500);
-
         if (!query.next()) return false;
         else
         {

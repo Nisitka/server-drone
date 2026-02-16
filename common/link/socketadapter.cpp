@@ -20,6 +20,8 @@ SocketAdapter::SocketAdapter(QObject *parent, QTcpSocket* tcpSocket_):
     // Уведомляем об отключении соединения
     connect(tcpSocket, &QTcpSocket::disconnected,
             this,      &SocketAdapter::disconnected);
+
+    currentMessage.clear();
 }
 
 void SocketAdapter::readyRead() {
@@ -29,19 +31,18 @@ void SocketAdapter::readyRead() {
     while(true) {
 
         // Если началось новое сообщение (block)
-        if (msgSize < 0)
+        if (msgSize < 0) // То пытаемся считать его размер
         {
-            // То пытаемся считать его размер
-
             /// Для теста
             if (!currentMessage.isEmpty())
                 qDebug() << "SocketAdapter::" << "Получен новый блок данных, хотя предыдущее сообщение никто не забрал!!!";
 
             // Если длинны хватает для извлечения размера сообщения
-            if (tcpSocket->bytesAvailable() >= sizeof(int))
+            if (tcpSocket->bytesAvailable() >= sizeof(msgSize))
             {
                 // Извлекаем размер ожидаемого сообщения
                 stream >> msgSize;
+                qDebug() << "SocketAdapter: accept msg, size -" << msgSize;
 
                 // Подготавливаем блок для нового сообщения
                 currentMessage.clear();
@@ -60,7 +61,6 @@ void SocketAdapter::readyRead() {
             if (tcpSocket->bytesAvailable() >= msgSize)
             {
                 // Извлекаем данные сообщения
-                //stream.device()->seek(0);
                 stream.readRawData(currentMessage.data(), msgSize);
 
                 // Уведомляем о том, что можно забрать сообщение
@@ -84,6 +84,7 @@ void SocketAdapter::sendByteArray(const QByteArray& data) {
   sendStream.device()->seek(0);
   sendStream << (quint16)(block.size() - sizeof(quint16));
 
+  qDebug() << "SocketAdapter: send msg, size -" << (quint16)(block.size() - sizeof(quint16));
   tcpSocket->write(block);
 }
 

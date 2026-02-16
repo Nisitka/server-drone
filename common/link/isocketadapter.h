@@ -20,7 +20,7 @@ public:
     virtual void sendByteArray(const QByteArray& data) = 0;
 
     // Забрать данные последнего сообщения
-    const QByteArray& getCurrentMessage()const{
+    QByteArray getCurrentMessage()const{
         return currentMessage;
     }
 

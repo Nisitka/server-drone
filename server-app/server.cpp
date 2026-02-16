@@ -82,7 +82,8 @@ void Server::acceptTryAuthMessage()
     ISocketAdapter* clientSocket = static_cast<ServerSocketAdapter*>(sender());
 
     // Сообщение в сыром виде
-    const QByteArray& msg = clientSocket->getCurrentMessage();
+    const QByteArray msg = clientSocket->getCurrentMessage();
+    qDebug() << "size AuthMessage -" << msg.size() << msg;
 
     // Обрабатываем
     if (!msg.isEmpty()){
@@ -97,7 +98,7 @@ void Server::acceptTryAuthMessage()
             QByteArray data = msg.mid(1); /// копирование!!!
 
             // Из данных получаем конкретный номер команды
-            qDebug() << "111111111111111111111111111" << data.size();
+            qDebug() << "111111111111111111111111111" << data.size() << static_cast<uint8_t>(data[0]);
             uint8_t id_com = command_server::get_command_id(data);
             qDebug() << "222222222222222222222222222";
 

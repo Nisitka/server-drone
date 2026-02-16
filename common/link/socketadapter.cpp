@@ -95,8 +95,8 @@ void SocketAdapter::sendByteArray(const QByteArray& data) {
 
 void SocketAdapter::disconnect()
 {
-    if (tcpSocket->isOpen())
-    {
+    if (tcpSocket->isOpen()){
+
         tcpSocket->close();
         emit disconnected();
     }
@@ -104,7 +104,5 @@ void SocketAdapter::disconnect()
 
 SocketAdapter::~SocketAdapter()
 {
-    disconnect();
-
     tcpSocket->deleteLater();
 }

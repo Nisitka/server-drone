@@ -60,7 +60,8 @@ void ClientsManager::removeClientSocket()
     }
 
     /// Задача на обновление данных в базе
-    taskQueue->enqueue(new TaskUserLogOut(login));
+    if (!login.isEmpty())
+        taskQueue->enqueue(new TaskUserLogOut(login));
 
     delete clientSocket;
     qDebug() << "client removed";

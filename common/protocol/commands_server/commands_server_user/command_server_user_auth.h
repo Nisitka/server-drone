@@ -16,6 +16,8 @@ public:
         // Считываем поля (при const QByteArray& - QIODevice::ReadOnly)
         QDataStream stream(data);
         stream.device()->seek(1); // минуем id команды
+        //uint8_t id_cmd;
+        //stream >> id_cmd;
         stream >> login >> pass;
     }
 

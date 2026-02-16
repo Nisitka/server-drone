@@ -86,32 +86,37 @@ void Server::acceptTryAuthMessage()
 
     // Обрабатываем
     if (!msg.isEmpty()){
-        // При const QByteArray& - QIODevice::ReadOnly
-        QDataStream stream(msg);
-
         // Тип принятого сообщения
-        uint8_t id_msg;
-        stream >> id_msg;
+        uint8_t id_msg = static_cast<uint8_t>(msg[0]);
 
         // Проверяем что это требуемый тип команды
         if (id_msg == id_msg_command_server){
+            qDebug() << "accept msg:" << id_msg_command_server;
+
             // Извлекаем оставшиеся данные
-            QByteArray data;
-            stream >> data; /// копирование!!!
+            QByteArray data = msg.mid(1); /// копирование!!!
 
             // Из данных получаем конкретный номер команды
+            qDebug() << "111111111111111111111111111" << data.size();
             id_command_server id_com = command_server::get_command_id(data);
+            qDebug() << "222222222222222222222222222";
 
             // Исходя из номера команды создаем объект-команду
             if (id_com == id_command_server_user_auth){
                 // Декодируем данные в команду
                 command_server_user_auth command(data); /// копирование в конструкторе!!!
 
+                qDebug() << "!!!!!!!!!!!!!!!!!!!" << command.Login() << command.Password();
+                TaskDataBase* task;
+
+                /// Сначала выходим из сессиий, если такие есть
+                task = new TaskUserLogOut(command.Login());
+                taskQueue->enqueue(task);
+
                 // Добавляем задачу на авторизацию пользователя в очередь
-                TaskDataBase* task = new TaskUserAuth(
+                task = new TaskUserAuth(
                     clientsManager->Actions(), clientSocket,
                     command.Login(), command.Password()); /// копирование в конструкторе!!!
-
                 taskQueue->enqueue(task);
             }
             else{
@@ -146,25 +151,27 @@ void Server::removeSocketFromNotAuthSockets(ISocketAdapter* client)
 
 void Server::runTest()
 {
-    ISocketAdapter* client = new ServerSocketAdapter(new QTcpSocket);
+    // ISocketAdapter* client = new ServerSocketAdapter(new QTcpSocket);
 
-    int i = 0;
-    while (i < 1000){
-        command_server_user_auth command("djigurda", "12345678");
-        // Добавляем задачу на авторизацию пользователя
-        TaskDataBase* task;
+    // int i = 0;
+    // while (i < 1000){
+    //     command_server_user_auth command("djigurda", "12345678");
+    //     // Добавляем задачу на авторизацию пользователя
+    //     TaskDataBase* task = nullptr;
 
-        if (i%2 == 1){
-            task = new TaskUserAuth(
-                clientsManager->Actions(), client, command.Login(), command.Password()); /// копирование в конструкторе!!!
-        }
-        else{
-            task = new TaskUserLogOut(command.Login());
-        }
+    //     if (i%2 == 1){
+    //         task = new TaskUserAuth(
+    //             clientsManager->Actions(), client, command.Login(), command.Password()); /// копирование в конструкторе!!!
+    //     }
+    //     else{
+    //         task = new TaskUserLogOut(command.Login());
+    //     }
+    //     ///QThread::msleep(200);
 
-        taskQueue->enqueue(task);
-        i++;
-    }
+    //     if (task)
+    //         taskQueue->enqueue(task);
+    //     i++;
+    // }
 }
 
 bool Server::run(int port)
@@ -224,6 +231,10 @@ bool Server::readConfig()
     }
 
     return true;
+}
+
+Server::~Server(){
+    delete clientsManager;
 }
 
 //void Server::message(QString msg) {

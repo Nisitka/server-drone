@@ -4,7 +4,7 @@
 # include "../../common/link/socketadapter.h"
 
 class ServerSocketAdapter : public SocketAdapter {
-  Q_OBJECT
+    Q_OBJECT
 public:
   explicit ServerSocketAdapter(QTcpSocket* pSock, QObject *parent = nullptr);
 };

@@ -8,7 +8,6 @@ class SocketAdapter: public ISocketAdapter {
   Q_OBJECT
 
 public slots:
-
     // Отключить соединение
     void disconnect();
 

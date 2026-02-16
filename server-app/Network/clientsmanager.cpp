@@ -95,3 +95,11 @@ void ClientsManager::disconnectClient(const QString& uuidClient)
 {
     clients[uuidClient]->disconnect();
 }
+
+ClientsManager::~ClientsManager(){
+    // Закрываем сессии всех клиентов
+    for (auto it = clients.begin(); it != clients.end(); ++it) {
+        /// Задача на обновление данных в базе
+        taskQueue->enqueue(new TaskUserLogOut(it.key()));
+    }
+}

@@ -9,6 +9,9 @@ namespace server_protocol {
 
 // Какие есть команды для сервера
 enum id_command_server: uint8_t{
+    //
+    id_command_server_unknown,
+
     /// Команды, связанные с пользователями
     id_command_server_user_auth,
 
@@ -26,8 +29,17 @@ public:
     // Узнать какая команда связанна
     // с картой сервера заложена в сообщение
     static id_command_server get_command_id(const QByteArray& data) {
-        // id команды лежит в самом начале
-        return (id_command_server)static_cast<uint8_t>(data[0]);
+
+        qDebug() << "??????????????" << data.size() << data.data();
+        if (!data.isEmpty()) {
+            qDebug() << "*****************";
+            // id команды лежит в самом начале
+            return (id_command_server)static_cast<uint8_t>(data[0]);
+        }
+        else {
+            qDebug() << "get_command_id: data.isEmpty()!";
+            return id_command_server_unknown;
+        }
     }
 
 };

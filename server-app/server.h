@@ -21,6 +21,7 @@ signals:
 
 public:
     explicit Server(int nPort, QObject *parent = nullptr);
+    ~Server();
 
     void runTest();
 

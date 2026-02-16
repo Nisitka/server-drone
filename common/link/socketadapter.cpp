@@ -54,6 +54,8 @@ void SocketAdapter::readyRead() {
         }
         else
         {
+            qDebug() << "Проверка, хватает ли длины для извлечения данных сообщения";
+
             // Если длины хватает для извлечения данных сообщения
             if (tcpSocket->bytesAvailable() >= msgSize)
             {

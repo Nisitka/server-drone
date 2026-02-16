@@ -18,6 +18,7 @@ public slots:
 
 public:
     ClientsManager(QueueTaskDB* taskQueue);
+    ~ClientsManager();
 
     ActionsClientsManager* Actions() const;
 

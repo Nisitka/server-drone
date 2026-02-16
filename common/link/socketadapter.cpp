@@ -42,7 +42,7 @@ void SocketAdapter::readyRead() {
             {
                 // Извлекаем размер ожидаемого сообщения
                 stream >> msgSize;
-                qDebug() << "SocketAdapter: accept msg, size -" << msgSize;
+                qDebug() << "SocketAdapter: start accepted msg, size -" << msgSize;
 
                 // Подготавливаем блок для нового сообщения
                 currentMessage.clear();
@@ -55,17 +55,17 @@ void SocketAdapter::readyRead() {
         }
         else
         {
-            qDebug() << "Проверка, хватает ли длины для извлечения данных сообщения";
+            qDebug() << "check tcpSocket->bytesAvailable() >= msgSize";
 
             // Если длины хватает для извлечения данных сообщения
             if (tcpSocket->bytesAvailable() >= msgSize)
             {
                 // Извлекаем данные сообщения
                 stream.readRawData(currentMessage.data(), msgSize);
+                msgSize = -1; // флаг нового сообщения
 
                 // Уведомляем о том, что можно забрать сообщение
                 emit message(); /// в этом же потоке сразу начинается обработка этого сообщения
-                msgSize = -1; // флаг нового сообщения
             }
             else
                 // ждем следующий блок
@@ -79,12 +79,14 @@ void SocketAdapter::sendByteArray(const QByteArray& data) {
   QByteArray block;
   QDataStream sendStream(&block, QIODevice::ReadWrite);
 
-  sendStream << quint16(0) << data;
+  // sendStream << quint16(0) << data;
 
-  sendStream.device()->seek(0);
-  sendStream << (quint16)(block.size() - sizeof(quint16));
+  // sendStream.device()->seek(0);
+  // sendStream << (quint16)(block.size() - sizeof(quint16));
 
-  qDebug() << "SocketAdapter: send msg, size -" << (quint16)(block.size() - sizeof(quint16));
+  sendStream << (quint16)data.size() << data;
+
+  qDebug() << "SocketAdapter: send msg, size -" << (quint16)block.size();
   tcpSocket->write(block);
 }
 

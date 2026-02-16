@@ -15,7 +15,8 @@ class command_server_map_object_create: public command_server{
 public:
 
     // data разбиваются на свойства команды
-    command_server_map_object_create(const QByteArray& data)
+    command_server_map_object_create(const QByteArray& data):
+        command_server(id_command_server_map_object_create)
     {
         // Считываем поля (при const QByteArray& - QIODevice::ReadOnly)
         QDataStream stream(data);
@@ -24,6 +25,7 @@ public:
     }
 
     command_server_map_object_create(type_object_map type_obj_, double Lat, double Lon):
+        command_server(id_command_server_map_object_create),
         type_obj(type_obj_),
         lat(Lat), lon(Lon)
     { /* ... */}
@@ -31,7 +33,7 @@ public:
     void toByteArray(QByteArray& boxForData) const override final
     {
         QDataStream stream(&boxForData, QIODevice::WriteOnly);
-        stream << (uint8_t)id_command_server_map_object_create /// id команды, который не храним
+        stream << (uint8_t)id_cmd
                << (uint8_t)type_obj
                << (double)lat << (double)lon;
     }

@@ -11,7 +11,8 @@ class command_server_user_auth: public command_server{
 public:
 
     // data разбиваются на свойства команды
-    command_server_user_auth(const QByteArray& data)
+    command_server_user_auth(const QByteArray& data):
+        command_server(id_command_server_user_auth)
     {
         // Считываем поля (при const QByteArray& - QIODevice::ReadOnly)
         QDataStream stream(data);
@@ -22,13 +23,14 @@ public:
     }
 
     command_server_user_auth(const QString& login_, const QString& pass_):
+        command_server(id_command_server_user_auth),
         login(login_), pass(pass_)
     { /* ... */}
 
     void toByteArray(QByteArray& boxForData) const override final
     {
         QDataStream stream(&boxForData, QIODevice::WriteOnly);
-        stream << (uint8_t)id_command_server_user_auth /// id команды, который не храним
+        stream << (uint8_t)id_cmd
                << login
                << pass;
     }

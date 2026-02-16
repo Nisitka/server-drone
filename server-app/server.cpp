@@ -98,7 +98,7 @@ void Server::acceptTryAuthMessage()
 
             // Из данных получаем конкретный номер команды
             qDebug() << "111111111111111111111111111" << data.size();
-            id_command_server id_com = command_server::get_command_id(data);
+            uint8_t id_com = command_server::get_command_id(data);
             qDebug() << "222222222222222222222222222";
 
             // Исходя из номера команды создаем объект-команду

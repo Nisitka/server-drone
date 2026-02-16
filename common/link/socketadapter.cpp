@@ -84,6 +84,7 @@ void SocketAdapter::sendByteArray(const QByteArray& data) {
   // sendStream.device()->seek(0);
   // sendStream << (quint16)(block.size() - sizeof(quint16));
 
+  qDebug() << "size send data" << data.size();
   sendStream << (quint16)data.size() << data;
 
   qDebug() << "SocketAdapter: send msg, size -" << (quint16)block.size();

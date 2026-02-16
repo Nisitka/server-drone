@@ -43,15 +43,15 @@ void SocketAdapter::readyRead() {
                 QByteArray data = tcpSocket->read(sizeof(qint16));  // прочитать именно 2 байта
                 if (data.size() == sizeof(qint16)) {
                     QDataStream stream(data);
-                    stream.setByteOrder(QDataStream::BigEndian);  // или LittleEndian, в зависимости от протокола
+                    stream.setByteOrder(QDataStream::LittleEndian);  // или LittleEndian, в зависимости от протокола
                     stream >> msgSize;
+
+                    qDebug() << "SocketAdapter: start accepted msg, size -" << msgSize;
+
+                    // Подготавливаем блок для нового сообщения
+                    currentMessage.clear();
+                    currentMessage.resize(msgSize);
                 }
-
-                qDebug() << "SocketAdapter: start accepted msg, size -" << msgSize;
-
-                // Подготавливаем блок для нового сообщения
-                currentMessage.clear();
-                currentMessage.resize(msgSize);
             }
             else
                 // ждем следующий блок данных

@@ -77,20 +77,15 @@ void SocketAdapter::readyRead() {
 }
 
 void SocketAdapter::sendByteArray(const QByteArray& data) {
-  QByteArray block;
-  QDataStream sendStream(&block, QIODevice::ReadWrite);
+    QByteArray block;
 
-  // sendStream << quint16(0) << data;
+    qDebug() << "size send data" << data.size() << sizeof(quint16);
+    quint16 size = data.size();
+    block.append(reinterpret_cast<const char*>(&size), sizeof(size));
+    block.append(data);
 
-  // sendStream.device()->seek(0);
-  // sendStream << (quint16)(block.size() - sizeof(quint16));
-
-  qDebug() << "size send data" << data.size() << sizeof(quint16);
-  quint16 size = data.size();
-  sendStream << size << data;
-
-  qDebug() << "SocketAdapter: send msg, size -" << (quint16)block.size();
-  tcpSocket->write(block);
+    qDebug() << "SocketAdapter: send msg, size -" << (quint16)block.size();
+    tcpSocket->write(block);
 }
 
 void SocketAdapter::disconnect()

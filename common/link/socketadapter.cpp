@@ -25,7 +25,6 @@ SocketAdapter::SocketAdapter(QObject *parent, QTcpSocket* tcpSocket_):
 }
 
 void SocketAdapter::readyRead() {
-    QDataStream stream(tcpSocket);
 
     // Пока не считаем всю полезную информацию их текущих данных в буфере сокета
     while(true) {
@@ -41,7 +40,13 @@ void SocketAdapter::readyRead() {
             if (tcpSocket->bytesAvailable() >= sizeof(msgSize))
             {
                 // Извлекаем размер ожидаемого сообщения
-                stream >> msgSize;
+                QByteArray data = tcpSocket->read(sizeof(qint16));  // прочитать именно 2 байта
+                if (data.size() == sizeof(qint16)) {
+                    QDataStream stream(data);
+                    stream.setByteOrder(QDataStream::BigEndian);  // или LittleEndian, в зависимости от протокола
+                    stream >> msgSize;
+                }
+
                 qDebug() << "SocketAdapter: start accepted msg, size -" << msgSize;
 
                 // Подготавливаем блок для нового сообщения
@@ -61,8 +66,7 @@ void SocketAdapter::readyRead() {
             if (tcpSocket->bytesAvailable() >= msgSize)
             {
                 // Извлекаем данные сообщения
-                stream.device()->seek(4);
-                stream.readRawData(currentMessage.data(), msgSize);
+                currentMessage = tcpSocket->read(msgSize);
                 msgSize = -1; // флаг нового сообщения
 
                 // Уведомляем о том, что можно забрать сообщение
@@ -81,6 +85,7 @@ void SocketAdapter::sendByteArray(const QByteArray& data) {
 
     qDebug() << "size send data" << data.size() << sizeof(quint16);
     quint16 size = data.size();
+    qDebug() << "value size:" << size;
     block.append(reinterpret_cast<const char*>(&size), sizeof(size));
     block.append(data);
 

@@ -61,6 +61,7 @@ void SocketAdapter::readyRead() {
             if (tcpSocket->bytesAvailable() >= msgSize)
             {
                 // Извлекаем данные сообщения
+                stream.device()->seek(4);
                 stream.readRawData(currentMessage.data(), msgSize);
                 msgSize = -1; // флаг нового сообщения
 
@@ -84,8 +85,9 @@ void SocketAdapter::sendByteArray(const QByteArray& data) {
   // sendStream.device()->seek(0);
   // sendStream << (quint16)(block.size() - sizeof(quint16));
 
-  qDebug() << "size send data" << data.size();
-  sendStream << (quint16)data.size() << data;
+  qDebug() << "size send data" << data.size() << sizeof(quint16);
+  quint16 size = data.size();
+  sendStream << size << data;
 
   qDebug() << "SocketAdapter: send msg, size -" << (quint16)block.size();
   tcpSocket->write(block);

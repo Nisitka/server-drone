@@ -89,6 +89,12 @@ void Server::acceptTryAuthMessage()
     if (!msg.isEmpty()){
         // Тип принятого сообщения
         uint8_t id_msg = static_cast<uint8_t>(msg[0]);
+        qDebug() << msg << "__________" << static_cast<uint8_t>(msg[0])
+                                        << static_cast<uint8_t>(msg[1])
+                                        << static_cast<uint8_t>(msg[2])
+                                        << static_cast<uint8_t>(msg[3])
+                                        << static_cast<uint8_t>(msg[4])
+                                        << static_cast<uint8_t>(msg[5]);
 
         // Проверяем что это требуемый тип команды
         if (id_msg == id_msg_command_server){

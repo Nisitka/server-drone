@@ -1,0 +1,9 @@
+
+database_host=192.168.4.18
+database_port=48364
+database=nisitka
+database_user=postgres
+database_password=pass123
+
+port=1337
+executor_count=4

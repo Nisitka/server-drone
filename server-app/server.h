@@ -20,7 +20,7 @@ signals:
                        const QString& user, const QString& password);
 
 public:
-    explicit Server(int nPort, QObject *parent = nullptr);
+    explicit Server(QObject *parent = nullptr);
     ~Server();
 
     void runTest();
@@ -45,7 +45,7 @@ private:
     ClientsManager* clientsManager;
 
     // Запуск как сетевой службы
-    bool run(int port);
+    bool run();
 
     //
     QueueTaskDB* taskQueue;
@@ -54,7 +54,13 @@ private:
     //
     bool readConfig();
     QMap<QString, QString> configParams;
-    QStringList expectedKeys = {"host", "port", "database", "user", "password"};
+    QStringList expectedKeys = {"database_host",
+                                "database_port",
+                                "database",
+                                "database_user",
+                                "database_password",
+                                "port",
+                                "executor_count"};
 };
 
 #endif // SERVER_H

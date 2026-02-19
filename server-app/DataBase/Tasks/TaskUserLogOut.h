@@ -20,18 +20,17 @@ public:
 
             switch (code) {
             case 0:
-                qDebug() << login << "- успешно вышел из сессии";
+                qDebug() << login << "- logged out of the session successfully";
 
                 /// Сообщаем об этом другим клиентам или типо того
 
-
                 break;
             case 1:
-                qDebug() << login << "- дублирование выхода из сессии";
+                qDebug() << login << "- duplicate session logout";
                 break;
 
             default:
-                qDebug() << "TaskUserLogOut: встречен неизвестный код возврата...";
+                qDebug() << "TaskUserLogOut: an unknown return code was received....";
                 return false;
             }
         }

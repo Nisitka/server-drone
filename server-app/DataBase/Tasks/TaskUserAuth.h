@@ -28,14 +28,17 @@ public:
                 emit clientsManager->trInitClient(login, socket);
                 break;
             case 1:
-                qDebug() << login << "- неверный логин или пароль!";
+                qDebug() << login << "- error login or password!";
                 break;
             case 2:
-                qDebug() << "пользователь" << login << "уже в системе!";
+                qDebug() << "user" << login << "already logged in!";
+                break;
+            case 3:
+                qDebug() << "error queue from auth" << login;
                 break;
 
             default:
-                qDebug() << "TaskUserAuth: встречен неизвестный код возврата...";
+                qDebug() << "TaskUserAuth: unknown return code query...";
                 return false;
             }
         }

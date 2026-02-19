@@ -22,7 +22,7 @@
 
 using namespace server_protocol;
 
-Server::Server(int port, QObject *parent):
+Server::Server(QObject *parent):
     QTcpServer(parent)
 {
     qDebug() << "Hello, drone-server!";
@@ -40,21 +40,28 @@ Server::Server(int port, QObject *parent):
     clientsManager->moveToThread(thread);
     thread->start();
 
-    // Обработчики задач связанных с БД
-    for (int i=0; i<4; i++){
-        TaskDataBaseExecutor* executer = new TaskDataBaseExecutor(taskQueue);
-        connect(this,     &Server::runSqlExecuters,
-                executer, &TaskDataBaseExecutor::run);
+    /// Запускаемся на по параметрам conf файла
+    if (readConfig()){
+        // Обработчики задач связанных с БД
+        int executor_count = configParams["executor_count"].toInt();
+        if (executor_count > 8) executor_count = 8;
 
-        QThread* thread = new QThread;
-        executer->moveToThread(thread);
-        thread->start();
+        for (int i=0; i<executor_count; i++){
+            TaskDataBaseExecutor* executer = new TaskDataBaseExecutor(taskQueue);
+            connect(this,     &Server::runSqlExecuters,
+                    executer, &TaskDataBaseExecutor::run);
 
-        sqlExecuters.append(executer);
-    }
+            QThread* thread = new QThread;
+            executer->moveToThread(thread);
+            thread->start();
 
-    if (readConfig() && run(port)){
-        qDebug() << "Server: успешно запущен!";
+            sqlExecuters.append(executer);
+        }
+
+        if (run())
+            qDebug() << "Server: successfully start!";
+        else
+            qDebug() << "Server: error run!";
     }
 }
 
@@ -146,29 +153,46 @@ void Server::removeSocketFromNotAuthSockets(ISocketAdapter* client)
 
 void Server::runTest()
 {
-    ISocketAdapter* client = new ServerSocketAdapter(new QTcpSocket);
+    //ISocketAdapter* client = new ServerSocketAdapter(new QTcpSocket);
+
+    // for (int i=0; i<1000; i++){
+    //     command_server_user_auth command("djigurda", "12345678");
+    //     TaskDataBase* task = nullptr;
+
+    //     if (i%2)
+    //         task = new TaskUserAuth(clientsManager->Actions(), client,
+    //                                 command.Login(), command.Password());
+    //     else
+    //         task = new TaskUserLogOut(command.Login());
+
+    //     if (task)
+    //         taskQueue->enqueue(task);
+
+    //     QThread::msleep(1);
+    // }
 
     command_server_user_auth command("djigurda", "12345678");
-    TaskDataBase* task = nullptr;
-    task = new TaskUserLogOut(command.Login());
-    if (task)
-        taskQueue->enqueue(task);
+    TaskDataBase* task = new TaskUserLogOut(command.Login());
+    taskQueue->enqueue(task);
 }
 
-bool Server::run(int port)
+bool Server::run()
 {
-    if (listen(QHostAddress::Any, port)) {
-        emit runSqlExecuters(configParams["host"],
-                             configParams["port"].toInt(),
+
+
+    if (listen(QHostAddress::Any, configParams["port"].toInt())) {
+
+        emit runSqlExecuters(configParams["database_host"],
+                             configParams["database_port"].toInt(),
                              configParams["database"],
-                             configParams["user"],
-                             configParams["password"]);
+                             configParams["database_user"],
+                             configParams["database_password"]);
     }
     else
     {
         this->close();
 
-        qDebug() << "Server: не удалось запустить сервер - " << this->errorString();
+        qDebug() << "Server: couldn't start - " << this->errorString();
         return false;
     }
 
@@ -179,7 +203,7 @@ bool Server::readConfig()
 {
     QFile file(QApplication::applicationDirPath() + "/conf/config.txt");
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        qWarning() << "Не удалось открыть файл config.txt";
+        qWarning() << "Couldn't open the file config.txt";
         return false;
     }
 
@@ -206,7 +230,7 @@ bool Server::readConfig()
         if (configParams.contains(key)) {
             qDebug() << key << ":" << configParams[key];
         } else {
-            qWarning() << "Параметр" << key << "не найден в config.txt";
+            qWarning() << "Parameter" << key << "not found in config.txt";
             return false;
         }
     }

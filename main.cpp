@@ -8,7 +8,7 @@ int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
 
-    Server server(1337);
+    Server server;
     server.runTest();
 
     return a.exec();

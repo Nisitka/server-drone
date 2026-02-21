@@ -6,7 +6,7 @@
 class ServerSocketAdapter : public SocketAdapter {
     Q_OBJECT
 public:
-  explicit ServerSocketAdapter(QTcpSocket* pSock, QObject *parent = nullptr);
+  explicit ServerSocketAdapter(QTcpSocket* pSock);
 };
 
 #endif // SERVERSOCKETADAPTER_H

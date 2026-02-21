@@ -12,17 +12,16 @@ public slots:
     void disconnect();
 
 public:
-  SocketAdapter(QObject *parent, QTcpSocket *pSock = nullptr);
-  virtual ~SocketAdapter();
-
-  virtual void sendByteArray(const QByteArray& data);
+    SocketAdapter(QTcpSocket *pSock = nullptr);
+    virtual ~SocketAdapter();
 
 protected slots:
-  void readyRead();
+    void readyRead();
+    void sendByteArray(const QByteArray& data) override final;
 
 protected:
-  QTcpSocket* tcpSocket;
-  qint16 msgSize;
+    QTcpSocket* tcpSocket;
+    qint16 msgSize;
 };
 
 #endif // SOCKETADAPTER_H

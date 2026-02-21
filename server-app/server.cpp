@@ -171,6 +171,7 @@ void Server::runTest()
     //     QThread::msleep(1);
     // }
 
+    /// Завершаем все сессии
     command_server_user_auth command("djigurda", "12345678");
     TaskDataBase* task = new TaskUserLogOut(command.Login());
     taskQueue->enqueue(task);

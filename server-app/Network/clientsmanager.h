@@ -27,6 +27,9 @@ private slots:
     void initClient(const QString& uuid,
                     ISocketAdapter* clientSock);
 
+    void sendByteArray(const QString& login,
+                       const QByteArray& data);
+
     // Удалить соединение с клиентом
     void removeClientSocket();
 

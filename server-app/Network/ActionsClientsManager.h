@@ -8,9 +8,13 @@ class ActionsClientsManager: public QObject
 {
     Q_OBJECT
 signals:
-    // Попытаться инициализировать клиента
-    void trInitClient(const QString& uuid,
-                      ISocketAdapter* clientSock);
+    // Добавить клиента
+    void addClient(const QString& login,
+                   ISocketAdapter* clientSock);
+
+    // Отправить сообщение клиенту
+    void sendByteArray(const QString& login,
+                       const QByteArray& data);
 };
 
 #endif // ACTIONSCLIENTSMANAGER_H

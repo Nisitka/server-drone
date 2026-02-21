@@ -4,6 +4,10 @@
 #include "./taskdatabase.h"
 #include "../../Network/ActionsClientsManager.h"
 
+#include "../../../common/protocol/commands_client/commands_client_user/commands_client_user_result_auth.h"
+
+using namespace server_protocol;
+
 class TaskUserAuth: public TaskDataBase
 {
 public:
@@ -21,21 +25,28 @@ public:
         else
         {
             int code = query.value(0).toInt();
+            command_client_user_result_auth::results_auth result;
+            QByteArray data;
 
             switch (code) {
             case 0:
                 qDebug() << login << "- успешно авторизирован!";
-                emit clientsManager->trInitClient(login, socket);
+                emit clientsManager->addClient(login, socket);
                 break;
-            case 1:
+            case 1:{
                 qDebug() << login << "- error login or password!";
-                break;
-            case 2:
+                result = command_client_user_result_auth::invalid_login_or_password;
+                command_client_user_result_auth cmd(result);
+                cmd.toByteArray(data);
+                break;}
+            case 2:{
                 qDebug() << "user" << login << "already logged in!";
-                break;
-            case 3:
+                result = command_client_user_result_auth::invalid;
+                break;}
+            case 3:{
                 qDebug() << "error queue from auth" << login;
-                break;
+                result = command_client_user_result_auth::invalid;
+                break;}
 
             default:
                 qDebug() << "TaskUserAuth: unknown return code query...";

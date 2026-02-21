@@ -13,16 +13,19 @@ signals:
     void message();
     void disconnected();
 
-public:
-    explicit ISocketAdapter(QObject *parent);
-    virtual ~ISocketAdapter();
+    void trSendByteArray(const QByteArray& data);
 
-    virtual void sendByteArray(const QByteArray& data) = 0;
+public:
+    explicit ISocketAdapter();
+    virtual ~ISocketAdapter();
 
     // Забрать данные последнего сообщения
     QByteArray getCurrentMessage()const{
         return currentMessage;
     }
+
+protected slots:
+    virtual void sendByteArray(const QByteArray& data) = 0;
 
 protected:
     // Последнее полученное сообщение

@@ -5,6 +5,8 @@
 #include <QDataStream>
 #include <QIODevice>
 
+#include "../command.h"
+
 namespace server_protocol {
 
 // Какие есть команды для сервера
@@ -22,20 +24,18 @@ enum id_command_server: uint8_t{
     id_command_server_map_requreq_objects
 };
 
-class command_server{
+class command_server: public command{
 public:
-    command_server(uint8_t id_cmd_ = id_command_server_unknown): id_cmd(id_cmd_) {}
-    void virtual toByteArray(QByteArray& boxForData) const = 0;
-
-    uint8_t id_command() const {return id_cmd;}
+    command_server(uint8_t id_cmd = id_command_server_unknown): command(id_cmd){
+        /* ... */
+    }
 
     // Узнать какая команда связанна
     // с картой сервера заложена в сообщение
     static uint8_t get_command_id(const QByteArray& data) {
 
-        qDebug() << "??????????????" << data.size();
         if (!data.isEmpty()) {
-            qDebug() << "*****************" << static_cast<uint8_t>(data[0]);
+
             // id команды лежит в самом начале
             return static_cast<uint8_t>(data[0]);
         }
@@ -44,9 +44,6 @@ public:
             return id_command_server_unknown;
         }
     }
-
-protected:
-    const uint8_t id_cmd;
 };
 
 }

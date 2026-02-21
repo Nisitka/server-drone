@@ -12,8 +12,8 @@ bool TaskDataBaseExecutor::connectToDataBase(const QString& host, int port,
                                              const QString& dbName,
                                              const QString& user, const QString& password)
 {
-    qDebug() << host << port << dbName << user << password;
-    qDebug() << QSqlDatabase::drivers();
+    // qDebug() << host << port << dbName << user << password;
+    // qDebug() << QSqlDatabase::drivers();
 
 
     // Создаем свое соединение с уникальным именем
@@ -25,7 +25,7 @@ bool TaskDataBaseExecutor::connectToDataBase(const QString& host, int port,
     db.setPassword(password);
 
     if (!db.open()) {
-        qDebug() << "Ошибка подключения (" << connName << "):" << db.lastError().text();
+        qDebug() << "BaseExecutor: error connect (" << connName << "):" << db.lastError().text();
         return false;
     }
 
@@ -54,7 +54,7 @@ void TaskDataBaseExecutor::run(const QString& host, int port,
 
         /// Выполнение задачи
         if (!executeTask(taskQueue->waitDequeue()))
-            qDebug() << "TaskDataBaseExecutor: задача не выполнена!";
+            qDebug() << "TaskDataBaseExecutor: sql-task not execute!";
     }
 
     // Закрываем соединение с БД
@@ -66,7 +66,7 @@ void TaskDataBaseExecutor::run(const QString& host, int port,
 
 bool TaskDataBaseExecutor::executeTask(TaskDataBase* task)
 {
-    qDebug() << connName << "Начало выполнения задачи..." << task->stringSQL;
+    qDebug() << connName << "Start execute sql-task..." << task->stringSQL;
 
     // Выполнение SQL-запроса
     QSqlQuery query(db);
@@ -74,12 +74,12 @@ bool TaskDataBaseExecutor::executeTask(TaskDataBase* task)
 
         // Обработка результатов
         if (!task->processRequestResult(query)){
-            qDebug() << "TaskDataBaseExecutor: ошибка обработки результатов запроса:";
+            qDebug() << "TaskDataBaseExecutor: request results processing error:";
             return false;
         }
     }
     else{
-        qDebug() << "TaskDataBaseExecutor: ошибка запроса:" << query.lastError().text();
+        qDebug() << "TaskDataBaseExecutor: error sql-query:" << query.lastError().text();
         return false;
     }
 

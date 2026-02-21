@@ -4,14 +4,14 @@
 #include <QTcpSocket>
 #include <QDataStream>
 
-SocketAdapter::SocketAdapter(QObject *parent, QTcpSocket* tcpSocket_):
-    ISocketAdapter(parent),
+SocketAdapter::SocketAdapter(QTcpSocket* tcpSocket_):
+    ISocketAdapter(),
     tcpSocket(tcpSocket_),
     msgSize(-1)
 {
     // Если адаптируем еще не созданный socket
     if (!tcpSocket)
-        tcpSocket = new QTcpSocket(this);
+        tcpSocket = new QTcpSocket;
 
     /// Чтение пакета данных - подготовка сообщения
     connect(tcpSocket, &QTcpSocket::readyRead,

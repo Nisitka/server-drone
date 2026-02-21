@@ -1,9 +1,9 @@
 #include "isocketadapter.h"
 
-ISocketAdapter::ISocketAdapter(QObject *parent)
-  : QObject(parent)
+ISocketAdapter::ISocketAdapter()
 {
-
+    connect(this, &ISocketAdapter::trSendByteArray,
+            this, &ISocketAdapter::sendByteArray);
 }
 
 ISocketAdapter::~ISocketAdapter()

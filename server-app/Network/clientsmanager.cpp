@@ -5,17 +5,23 @@
 //
 #include "../DataBase/Tasks/TaskUserLogOut.h"
 
+#include "../../common/protocol/commands_client/commands_client_user/commands_client_user_result_auth.h"
+
+using namespace server_protocol;
+
 ClientsManager::ClientsManager(QueueTaskDB* taskQueue_):
     QObject(),
     taskQueue(taskQueue_)
 {
+    /// Интерфейс по асинхронной работе с клиентами
     actions = new ActionsClientsManager;
-    connect(actions, &ActionsClientsManager::trInitClient,
+    connect(actions, &ActionsClientsManager::addClient,
             this,    &ClientsManager::initClient);
+    connect(actions, &ActionsClientsManager::sendByteArray,
+            this,    &ClientsManager::sendByteArray);
 }
 
-ActionsClientsManager* ClientsManager::Actions() const
-{
+ActionsClientsManager* ClientsManager::Actions() const{
     return actions;
 }
 
@@ -29,9 +35,6 @@ void ClientsManager::initClient(const QString& uuidClient, ISocketAdapter* socke
     // Сохраняем клиента
     clients[uuidClient] = socket;
 
-    // Отвечаем клиенту на соединение
-    ///pSockHandle->sendString("connect");
-
     // Обработка полученных от клиента сообщений
     connect(socket, &ISocketAdapter::message,
             this,   &ClientsManager::acceptMessageFromSocket);
@@ -40,8 +43,27 @@ void ClientsManager::initClient(const QString& uuidClient, ISocketAdapter* socke
     connect(socket, &ISocketAdapter::disconnected,
             this,   &ClientsManager::removeClientSocket);
 
+    ///
+    command_client_user_result_auth cmd(command_client_user_result_auth::successfully);
+    QByteArray data;
+    cmd.toByteArray(data);
+    emit socket->trSendByteArray(data);
+
     // Сообщаем, что пользователь инициализирован
     emit itializedClient(socket);
+}
+
+void ClientsManager::sendByteArray(const QString& login,
+                                   const QByteArray& data)
+{
+    if (clients.contains(login)){
+        ISocketAdapter* clientSocket = clients.value(login);
+
+        if (clientSocket)
+            emit clientSocket->trSendByteArray(data);
+    }
+    else
+        qDebug() << "ClientsManager:: try send byteArray unknown client -" << login;
 }
 
 void ClientsManager::removeClientSocket()

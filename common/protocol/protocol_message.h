@@ -54,21 +54,18 @@ inline void appendStringToByteArray(const QString& str, QByteArray& box){
     box.append(strData);
 }
 
-inline QString readStringFromByteArray(const QByteArray& byteArray, int& readStrLen, int offset = 0){
+inline QString readStringFromByteArray(const QByteArray& byteArray, int& pos_end, int offset = 0){
     const char* dataPtr = byteArray.constData();
 
-    // Считаем число
-    int readNumber;
-    memcpy(&readNumber, dataPtr + offset, sizeof(readNumber));
-    offset += sizeof(readNumber);
-
     // Считаем длину строки
+    int readStrLen;
     memcpy(&readStrLen, dataPtr + offset, sizeof(readStrLen));
     offset += sizeof(readStrLen);
 
     // Считаем строку
     const QByteArray readStrData(dataPtr + offset, readStrLen);
 
+    pos_end = offset + readStrLen;
     return QString::fromUtf8(readStrData);
 }
 

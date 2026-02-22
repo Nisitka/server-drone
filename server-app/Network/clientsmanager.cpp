@@ -44,7 +44,7 @@ void ClientsManager::initClient(const QString& uuidClient, ISocketAdapter* socke
             this,   &ClientsManager::removeClientSocket);
 
     ///
-    command_client_user_result_auth cmd(command_client_user_result_auth::successfully);;
+    command_client_user_result_auth cmd(command_client_user_result_auth::successfully);
     emit socket->trSendByteArray(cmd.toByteArray());
 
     // Сообщаем, что пользователь инициализирован

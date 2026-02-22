@@ -19,11 +19,9 @@ public:
         command(id_command_server_user_auth)
     {
         int readStrPos = sizeof(uint8_t)*2; // минуем id_msg, id_cmd
-        int lenStr;
-        login = readStringFromByteArray(data, lenStr, readStrPos);
-
-        readStrPos += lenStr;
-        pass  = readStringFromByteArray(data, lenStr, readStrPos);
+        int pos_end;
+        login = readStringFromByteArray(data, pos_end, readStrPos);
+        pass  = readStringFromByteArray(data, pos_end, pos_end);
     }
 
     command_server_user_auth(const QString& login_, const QString& pass_):

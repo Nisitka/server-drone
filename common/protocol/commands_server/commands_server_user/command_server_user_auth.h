@@ -1,39 +1,48 @@
 #ifndef COMMAND_SERVER_USER_AUTH_H
 #define COMMAND_SERVER_USER_AUTH_H
 
-#include "../command_server.h"
+#include "../../../protocol/command.h"
+#include "../../../protocol/protocol_message.h"
+#include "../../commands_server/command_server.h"
 
 namespace server_protocol {
 
 // Авторизоваться на сервере:
 // логин (QString), пароль (QString)
-class command_server_user_auth: public command_server{
+class command_server_user_auth: public protocol_message,
+                                public command{
 public:
 
     // data разбиваются на свойства команды
     command_server_user_auth(const QByteArray& data):
-        command_server(id_command_server_user_auth)
+        protocol_message(id_msg_command_server),
+        command(id_command_server_user_auth)
     {
-        // Считываем поля (при const QByteArray& - QIODevice::ReadOnly)
-        QDataStream stream(data);
-        // минуем id команды
-        uint8_t id;
-        stream >> id;
+        int readStrPos = sizeof(uint8_t)*2; // минуем id_msg, id_cmd
+        int lenStr;
+        login = readStringFromByteArray(data, lenStr, readStrPos);
 
-        stream >> login >> pass;
+        readStrPos += lenStr;
+        pass  = readStringFromByteArray(data, lenStr, readStrPos);
     }
 
     command_server_user_auth(const QString& login_, const QString& pass_):
-        command_server(id_command_server_user_auth),
+        protocol_message(id_msg_command_server),
+        command(id_command_server_user_auth),
         login(login_), pass(pass_)
     { /* ... */}
 
-    void toByteArray(QByteArray& boxForData) const override final
-    {
-        QDataStream stream(&boxForData, QIODevice::WriteOnly);
-        stream << (uint8_t)id_cmd
-               << login
-               << pass;
+    QByteArray toByteArray() const override final{
+        QByteArray byteArray;
+
+        byteArray.append(static_cast<char>(id_msg));
+        byteArray.append(static_cast<char>(id_cmd));
+
+        // Прикладные данные
+        appendStringToByteArray(login, byteArray);
+        appendStringToByteArray(pass, byteArray);
+
+        return byteArray;
     }
 
     const QString& Login() const{

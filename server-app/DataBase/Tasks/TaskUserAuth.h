@@ -37,15 +37,19 @@ public:
                 qDebug() << login << "- error login or password!";
                 result = command_client_user_result_auth::invalid_login_or_password;
                 command_client_user_result_auth cmd(result);
-                cmd.toByteArray(data);
+                emit socket->trSendByteArray(cmd.toByteArray());
                 break;}
             case 2:{
                 qDebug() << "user" << login << "already logged in!";
                 result = command_client_user_result_auth::invalid;
+                command_client_user_result_auth cmd(result);
+                emit socket->trSendByteArray(cmd.toByteArray());
                 break;}
             case 3:{
                 qDebug() << "error queue from auth" << login;
                 result = command_client_user_result_auth::invalid;
+                command_client_user_result_auth cmd(result);
+                emit socket->trSendByteArray(cmd.toByteArray());
                 break;}
 
             default:

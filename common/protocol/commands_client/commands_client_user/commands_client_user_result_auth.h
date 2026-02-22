@@ -1,11 +1,15 @@
 #ifndef COMMANDS_CLIENT_USER_RESULT_AUTH_H
 #define COMMANDS_CLIENT_USER_RESULT_AUTH_H
 
+#include "../../../protocol/command.h"
+#include "../../../protocol/protocol_message.h"
+
 #include "../command_client.h"
 
 namespace server_protocol {
 
-class command_client_user_result_auth: public command_client{
+class command_client_user_result_auth: public protocol_message,
+                                       public command{
 public:
     enum results_auth: uint8_t{
         successfully,
@@ -14,26 +18,31 @@ public:
     };
 
     command_client_user_result_auth(const QByteArray& data):
-        command_client(id_command_client_user_result_auth)
+        protocol_message(id_msg_command_client),
+        command(id_command_client_user_result_auth)
     {
-        QDataStream stream(data);
-        // минуем id команды
-        uint8_t id;
-        stream >> id;
+        int posData = sizeof(uint8_t)*2; // минуем id_msg, id_cmd
 
-        stream >> value;
+        const char* dataPtr = data.constData();
+        memcpy(&value, dataPtr + posData, sizeof(value));
     }
 
     command_client_user_result_auth(results_auth value_):
-        command_client(id_command_client_user_result_auth),
+        protocol_message(id_msg_command_client),
+        command(id_command_client_user_result_auth),
         value(value_)
     { /* ... */}
 
-    void toByteArray(QByteArray& boxForData) const override final
+    QByteArray toByteArray() const override final
     {
-        QDataStream stream(&boxForData, QIODevice::WriteOnly);
-        stream << (uint8_t)id_cmd
-               << value;
+        QByteArray byteArray;
+
+        byteArray.append(static_cast<char>(id_msg));
+        byteArray.append(static_cast<char>(id_cmd));
+
+        byteArray.append(static_cast<char>(value));
+
+        return byteArray;
     }
 
     uint8_t Value() const{

@@ -95,22 +95,19 @@ void Server::acceptTryAuthMessage()
     // Обрабатываем
     if (!msg.isEmpty()){
         // Тип принятого сообщения
-        uint8_t id_msg = static_cast<uint8_t>(msg[0]);
+        uint8_t id_msg = protocol_message::get_msg_id(msg);
 
         // Проверяем что это требуемый тип команды
         if (id_msg == id_msg_command_server){
-            qDebug() << "accept msg:" << id_msg_command_server;
-
-            // Извлекаем оставшиеся данные
-            QByteArray data = msg.mid(1); /// копирование!!!
+            qDebug() << "Server: accept msg:" << id_msg_command_server;
 
             // Из данных получаем конкретный номер команды
-            uint8_t id_com = command_server::get_command_id(data);
+            uint8_t id_command = get_id_command_server(msg);
 
             // Исходя из номера команды создаем объект-команду
-            if (id_com == id_command_server_user_auth){
+            if (id_command == id_command_server_user_auth){
                 // Декодируем данные в команду
-                command_server_user_auth command(data); /// копирование в конструкторе!!!
+                command_server_user_auth command(msg); /// копирование в конструкторе!!!
 
                 qDebug() << "try user auth:" << command.Login() << command.Password();
                 TaskDataBase* task;
@@ -122,7 +119,7 @@ void Server::acceptTryAuthMessage()
                 taskQueue->enqueue(task);
             }
             else{
-                qDebug() << "Server: от неавторизованного пользователя получилии команду" << id_com <<", ожидая команду" << id_command_server_user_auth;
+                qDebug() << "Server: от неавторизованного пользователя получилии команду" << id_command <<", ожидая команду" << id_command_server_user_auth;
             }
         }
         else{

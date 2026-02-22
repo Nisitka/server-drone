@@ -4,42 +4,60 @@
 #include <QDataStream>
 #include <QIODevice>
 
-#include "../command_server.h"
+#include "../../../protocol/command.h"
+#include "../../../protocol/protocol_message.h"
+#include "../../commands_server/command_server.h"
+
 #include "./command_server_map.h"
 
 namespace server_protocol {
 
 // Создать объект на карте:
 // тип ебъекта(uint8_t), координаты(double,double), имя (QString)
-class command_server_map_object_create: public command_server{
+class command_server_map_object_create: public protocol_message,
+                                        public command{
 public:
 
     // data разбиваются на свойства команды
     command_server_map_object_create(const QByteArray& data):
-        command_server(id_command_server_map_object_create)
+        protocol_message(id_msg_command_server),
+        command(id_command_server_map_object_create)
     {
-        // Считываем поля (при const QByteArray& - QIODevice::ReadOnly)
-        QDataStream stream(data);
-        stream.device()->seek(1); // минуем id команды
-        stream >> type_obj >> lat >> lon;
+        int posData = sizeof(uint8_t)*2; // минуем id_msg, id_cmd
+
+        const char* dataPtr = data.constData();
+
+        memcpy(&type_obj, dataPtr + posData, sizeof(type_obj));
+        posData += sizeof(type_obj);
+
+        memcpy(&lat, dataPtr + posData, sizeof(lat));
+        posData += sizeof(lat);
+
+        memcpy(&lon, dataPtr + posData, sizeof(lon));
     }
 
     command_server_map_object_create(type_object_map type_obj_, double Lat, double Lon):
-        command_server(id_command_server_map_object_create),
+        protocol_message(id_msg_command_server),
+        command(id_command_server_map_object_create),
         type_obj(type_obj_),
         lat(Lat), lon(Lon)
     { /* ... */}
 
-    void toByteArray(QByteArray& boxForData) const override final
-    {
-        QDataStream stream(&boxForData, QIODevice::WriteOnly);
-        stream << (uint8_t)id_cmd
-               << (uint8_t)type_obj
-               << (double)lat << (double)lon;
+    QByteArray toByteArray() const override final{
+        QByteArray byteArray;
+
+        byteArray.append(static_cast<char>(id_msg));
+        byteArray.append(static_cast<char>(id_cmd));
+
+        byteArray.append(static_cast<char>(type_obj));
+        byteArray.append(reinterpret_cast<const char*>(&lat), sizeof(lat));
+        byteArray.append(reinterpret_cast<const char*>(&lon), sizeof(lon));
+
+        return byteArray;
     }
 
-    type_object_map type_object() const{
-        return (type_object_map)type_obj;
+    uint8_t type_object() const{
+        return type_obj;
     }
     double Lat() const{
         return lat;

@@ -98,7 +98,6 @@ void SocketAdapter::disconnect()
     if (tcpSocket->isOpen()){
 
         tcpSocket->close();
-        emit disconnected();
     }
 }
 

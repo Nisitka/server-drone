@@ -26,7 +26,6 @@ public:
         {
             int code = query.value(0).toInt();
             command_client_user_result_auth::results_auth result;
-            QByteArray data;
 
             switch (code) {
             case 0:

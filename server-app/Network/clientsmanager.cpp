@@ -103,13 +103,7 @@ void ClientsManager::acceptMessageFromSocket()
 
 void ClientsManager::processingMessage(const QByteArray& msg)
 {
-    // При const QByteArray& - QIODevice::ReadOnly
-    QDataStream stream(msg);
-
-    // Тип принятого сообщения
-    uint8_t id_msg;
-    stream >> id_msg;
-    qDebug() << "processing message, id_message:" << id_msg;
+    qDebug() << "processing message, id_message:" << msg;
 }
 
 void ClientsManager::disconnectClient(const QString& uuidClient)

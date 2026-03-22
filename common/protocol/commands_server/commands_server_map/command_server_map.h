@@ -5,11 +5,6 @@
 
 namespace server_protocol {
 
-enum type_object_map: uint8_t{
-    drone,
-    marker
-};
-
 }
 
 #endif // COMMAND_SERVER_MAP_H

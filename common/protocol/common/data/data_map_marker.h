@@ -25,25 +25,21 @@ public:
         type_obj_id(type_obj_id_),
         subtype_obj_id(subtype_obj_id_),
         lat(Lat), lon(Lon),
-        name(name_), info(info_),
-        color_name_r(color_name.red()),
-        color_name_g(color_name.green()),
-        color_name_b(color_name.blue())
+        colorName(color_name)
     {   }
 
     data_map_marker(const QByteArray& data, int posData):
-        isEmpty(false)
-    {
-        const char* dataPtr = data.constData();
+        isEmpty(false),
 
         // uuid
-        uuid = readStringFromByteArray(data, posData, posData);
+        uuid(readStringFromByteArray(data, posData, posData)){
 
         // Дата и время последнего обновления
         lastUpdate = QDateTime::fromString(readStringFromByteArray(data, posData, posData),
                                            format_lastUpdate);
 
         // Тип метки
+        const char* dataPtr = data.constData();
         memcpy(&type_obj_id, dataPtr + posData, sizeof(uint8_t));
         posData += sizeof(uint8_t);
         memcpy(&subtype_obj_id, dataPtr + posData, sizeof(uint8_t));
@@ -57,12 +53,16 @@ public:
 
         // Имя
         name = readStringFromByteArray(data, posData, posData);
-        memcpy(&color_name_r, dataPtr + posData, sizeof(uint8_t));
+
+        // Цвет имени
+        uint8_t r, g, b;
+        memcpy(&r, dataPtr + posData, sizeof(uint8_t));
         posData += sizeof(uint8_t);
-        memcpy(&color_name_g, dataPtr + posData, sizeof(uint8_t));
+        memcpy(&g, dataPtr + posData, sizeof(uint8_t));
         posData += sizeof(uint8_t);
-        memcpy(&color_name_b, dataPtr + posData, sizeof(uint8_t));
+        memcpy(&b, dataPtr + posData, sizeof(uint8_t));
         posData += sizeof(uint8_t);
+        colorName = QColor(r,g,b);
 
         // Информация
         info = readStringFromByteArray(data, posData, posData);
@@ -91,24 +91,21 @@ public:
 
         // Имя
         appendStringToByteArray(name, byteArray);
-        byteArray.append(static_cast<char>(color_name_r));
-        byteArray.append(static_cast<char>(color_name_g));
-        byteArray.append(static_cast<char>(color_name_b));
+
+        // Цвет имени
+        byteArray.append(static_cast<char>((uint8_t)colorName.red()));
+        byteArray.append(static_cast<char>((uint8_t)colorName.green()));
+        byteArray.append(static_cast<char>((uint8_t)colorName.blue()));
 
         // Доп. информация
         appendStringToByteArray(info, byteArray);
     }
 
-    QColor ColorName() const{
-        return QColor(color_name_r,
-                      color_name_g,
-                      color_name_b);
-    }
     // Пустая ли структура
     bool const isEmpty;
 
     // uuid
-    QString uuid;
+    const QString uuid;
 
     // Дата и время последнего обновления
     QDateTime lastUpdate;
@@ -126,9 +123,7 @@ public:
     QString name;
 
     // Цвет имени
-    uint8_t color_name_r;
-    uint8_t color_name_g;
-    uint8_t color_name_b;
+    QColor colorName;
 
     // Доп. инфа
     QString info;

@@ -10,7 +10,7 @@
 #include "../../../protocol/protocol_message.h"
 #include "../../commands_server/command_server.h"
 
-#include "./command_server_map.h"
+#include "../../common/data/data_map_marker.h"
 
 namespace server_protocol {
 
@@ -22,56 +22,16 @@ public:
     // data разбиваются на свойства команды
     command_server_map_object_create(const QByteArray& data):
         protocol_message(id_msg_command_server),
-        command(id_command_server_map_object_create)
+        command(id_command_server_map_object_create),
+        data_marker(data, sizeof(uint8_t)*2) // минуем id_msg, id_cmd
     {
-        const char* dataPtr = data.constData();
-        int posData = sizeof(uint8_t)*2; // минуем id_msg, id_cmd
 
-        // uuid
-        readStringFromByteArray(data, posData, posData);
-
-        // Тип метки
-        memcpy(&type_obj_id, dataPtr + posData, sizeof(uint8_t));
-        posData += sizeof(uint8_t);
-        memcpy(&subtype_obj_id, dataPtr + posData, sizeof(uint8_t));
-        posData += sizeof(uint8_t);
-
-        // Координаты
-        memcpy(&lat, dataPtr + posData, sizeof(lat));
-        posData += sizeof(lat);
-        memcpy(&lon, dataPtr + posData, sizeof(lon));
-        posData += sizeof(lon);
-
-        // Имя
-        name = readStringFromByteArray(data, posData, posData);
-        memcpy(&color_name_r, dataPtr + posData, sizeof(uint8_t));
-        posData += sizeof(uint8_t);
-        memcpy(&color_name_g, dataPtr + posData, sizeof(uint8_t));
-        posData += sizeof(uint8_t);
-        memcpy(&color_name_b, dataPtr + posData, sizeof(uint8_t));
-        posData += sizeof(uint8_t);
-
-        // Информация
-        info = readStringFromByteArray(data, posData, posData);
     }
 
-    command_server_map_object_create(const QString& uuid_,
-                                    uint8_t type_obj_id_,
-                                    uint8_t subtype_obj_id_,
-                                    const QString& name_,
-                                    const QColor& color_name,
-                                    double Lat, double Lon,
-                                    const QString& info_):
+    command_server_map_object_create(const data_map_marker& data):
         protocol_message(id_msg_command_server),
         command(id_command_server_map_object_create),
-        uuid(uuid_),
-        type_obj_id(type_obj_id_),
-        subtype_obj_id(subtype_obj_id_),
-        lat(Lat), lon(Lon),
-        name(name_), info(info_),
-        color_name_r(color_name.red()),
-        color_name_g(color_name.green()),
-        color_name_b(color_name.blue())
+        data_marker(data)
     { /* ... */}
 
     QByteArray toByteArray() const override final{
@@ -80,92 +40,52 @@ public:
         byteArray.append(static_cast<char>(id_msg));
         byteArray.append(static_cast<char>(id_cmd));
 
-        // uuid
-        appendStringToByteArray(uuid, byteArray);
-
-        // Тип метки
-        byteArray.append(static_cast<char>(type_obj_id));
-        byteArray.append(static_cast<char>(subtype_obj_id));
-
-        // Координаты
-        byteArray.append(reinterpret_cast<const char*>(&lat), sizeof(lat));
-        byteArray.append(reinterpret_cast<const char*>(&lon), sizeof(lon));
-
-        // Имя
-        appendStringToByteArray(name, byteArray);
-        byteArray.append(static_cast<char>(color_name_r));
-        byteArray.append(static_cast<char>(color_name_g));
-        byteArray.append(static_cast<char>(color_name_b));
-
-        // Доп. информация
-        appendStringToByteArray(info, byteArray);
+        data_marker.appendToByteArray(byteArray);
 
         return byteArray;
     }
 
     QString UUID() const{
-        return uuid;
+        return data_marker.uuid;
     }
 
     uint8_t type_object() const{
-        return type_obj_id;
+        return data_marker.type_obj_id;
     }
     uint8_t subtype_object() const{
-        return subtype_obj_id;
+        return data_marker.subtype_obj_id;
     }
 
     QString Name() const{
-        return name;
+        return data_marker.name;
     }
 
     QString Info() const{
-        return info;
+        return data_marker.info;
     }
 
     QColor ColorName() const{
-        return QColor(color_name_r,
-                      color_name_g,
-                      color_name_b);
+        return data_marker.ColorName();
     }
     uint8_t ColorName_R() const{
-        return color_name_r;
+        return data_marker.color_name_r;
     }
     uint8_t ColorName_G() const{
-        return color_name_g;
+        return data_marker.color_name_g;
     }
     uint8_t ColorName_B() const{
-        return color_name_b;
+        return data_marker.color_name_b;
     }
 
     double Lat() const{
-        return lat;
+        return data_marker.lat;
     }
     double Lon() const{
-        return lon;
+        return data_marker.lon;
     }
 
 private:
-    // uuid
-    QString uuid;
-
-    // Тип метки
-    uint8_t type_obj_id;
-    uint8_t subtype_obj_id;
-
-    // Координаты
-    double lat;
-    double lon;
-
-    // Имя
-    QString name;
-
-    // Цвет имени
-    uint8_t color_name_r;
-    uint8_t color_name_g;
-    uint8_t color_name_b;
-
-    // Доп. инфа
-    QString info;
+    data_map_marker data_marker;
 };
 
 }

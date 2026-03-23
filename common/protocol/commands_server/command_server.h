@@ -17,6 +17,7 @@ enum id_command_server: uint8_t{
     /// Команды, связанные с картой
     id_command_server_map_object_create,
     id_command_server_map_object_remove,
+    id_command_server_map_object_update,
     id_command_server_map_object_set_position,
     id_command_server_map_requreq_objects
 };

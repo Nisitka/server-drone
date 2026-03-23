@@ -25,7 +25,9 @@ public:
         type_obj_id(type_obj_id_),
         subtype_obj_id(subtype_obj_id_),
         lat(Lat), lon(Lon),
-        colorName(color_name)
+        name(name_),
+        colorName(color_name),
+        info(info_)
     {   }
 
     data_map_marker(const QByteArray& data, int posData):

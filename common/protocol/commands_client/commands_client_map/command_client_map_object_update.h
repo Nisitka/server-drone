@@ -10,7 +10,7 @@
 namespace server_protocol {
 
 class command_client_map_object_update: public protocol_message,
-                                         public command{
+                                        public command{
 public:
     command_client_map_object_update(const QByteArray& data):
         protocol_message(id_msg_command_client),

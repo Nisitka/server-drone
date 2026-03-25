@@ -4,6 +4,7 @@
 
 //
 #include "../DataBase/Tasks/TaskUserLogOut.h"
+#include "../../common/protocol/commands_server/command_server.h"
 
 #include "../../common/protocol/commands_client/commands_client_user/commands_client_user_result_auth.h"
 
@@ -103,7 +104,27 @@ void ClientsManager::acceptMessageFromSocket()
 
 void ClientsManager::processingMessage(const QByteArray& msg)
 {
-    qDebug() << "processing message, id_message:" << msg;
+    // Тип принятого сообщения
+    uint8_t id_msg = protocol_message::get_msg_id(msg);
+    qDebug() << "processing message, id_message:" << id_msg;
+    if (id_msg != id_msg_command_server){
+        qDebug() << "id_msg != id_msg_command_server";
+        return;
+    }
+
+    /// В зависимости от сообщения инициируем задачу
+    // Из данных получаем конкретный номер команды
+    uint8_t id_command = get_id_command_server(msg);
+    switch (id_command) {
+    case id_command_server_map_requreq_objects:
+        qDebug() << "id_command_server_map_requreq_objects";
+
+        break;
+    default:
+        qDebug() << "id_command_server unknown:" << id_command;
+        break;
+    }
+
 }
 
 void ClientsManager::disconnectClient(const QString& uuidClient)

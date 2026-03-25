@@ -16,6 +16,13 @@ public:
         invalid
     };
 
+    uint8_t getResult() const{
+        return result;
+    }
+    uint8_t getCountMarkers() const{
+        return count_markers;
+    }
+
     command_client_map_result_requreq_markers(const QByteArray& data):
         protocol_message(id_msg_command_client),
         command(id_command_client_map_result_requreq_markers)

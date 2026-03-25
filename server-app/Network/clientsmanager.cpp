@@ -124,7 +124,6 @@ void ClientsManager::processingMessage(const QByteArray& msg)
         qDebug() << "id_command_server unknown:" << id_command;
         break;
     }
-
 }
 
 void ClientsManager::disconnectClient(const QString& uuidClient)

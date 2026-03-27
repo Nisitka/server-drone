@@ -4,6 +4,7 @@
 
 //
 #include "../DataBase/Tasks/TaskUserLogOut.h"
+#include "../DataBase/Tasks/TaskRequreqMapMarkers.h"
 #include "../../common/protocol/commands_server/command_server.h"
 
 #include "../../common/protocol/commands_client/commands_client_user/commands_client_user_result_auth.h"
@@ -91,18 +92,33 @@ void ClientsManager::removeClientSocket()
 void ClientsManager::acceptMessageFromSocket()
 {
     ISocketAdapter* client = static_cast<ServerSocketAdapter*>(sender());
+    const QString login = socketToLogin(client);
 
     // Сообщение в сыром виде
     const QByteArray& msg = client->getCurrentMessage();
 
     // Обрабатываем
-    if (!msg.isEmpty())
-        processingMessage(msg);
+    if (!msg.isEmpty() && !login.isEmpty())
+        processingMessage(msg, login);
     else
         qDebug() << "ClientsManager: попытка обработать пустое сообщение!";
 }
 
-void ClientsManager::processingMessage(const QByteArray& msg)
+QString ClientsManager::socketToLogin(ISocketAdapter* socket) const{
+    // Итерация по всем парам ключ-значение в QMap
+    for (auto it = clients.constBegin(); it != clients.constEnd(); ++it) {
+
+        // Если значение совпадает с искомым, возарвщаем его ключ
+        if (it.value() == socket) {
+            return it.key();
+        }
+    }
+
+    return QString();
+}
+
+void ClientsManager::processingMessage(const QByteArray& msg,
+                                       const QString& login_client)
 {
     // Тип принятого сообщения
     uint8_t id_msg = protocol_message::get_msg_id(msg);
@@ -118,7 +134,7 @@ void ClientsManager::processingMessage(const QByteArray& msg)
     switch (id_command) {
     case id_command_server_map_requreq_objects:
         qDebug() << "id_command_server_map_requreq_objects";
-
+        taskQueue->enqueue(new TaskRequreqMapMarkers(Actions(), login_client));
         break;
     default:
         qDebug() << "id_command_server unknown:" << id_command;

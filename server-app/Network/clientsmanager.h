@@ -44,9 +44,11 @@ private:
 
     // Клиенты по uuid-м их логинов
     QMap <QString, ISocketAdapter*> clients;
+    QString socketToLogin(ISocketAdapter*) const;
 
     //
-    void processingMessage(const QByteArray& msg);
+    void processingMessage(const QByteArray& msg,
+                           const QString& login_client);
 
     // Инициировать отключение клиента от сервера
     void disconnectClient(const QString& uuidClient);

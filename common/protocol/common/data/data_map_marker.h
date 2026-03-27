@@ -131,7 +131,7 @@ public:
     QString info;
 };
 
-inline QString const data_map_marker::format_lastUpdate = "yyyy-MM-dd HH:mm:ss";
+inline QString const data_map_marker::format_lastUpdate = "yyyy-MM-dd HH:mm:ss.zzz";
 
 }
 

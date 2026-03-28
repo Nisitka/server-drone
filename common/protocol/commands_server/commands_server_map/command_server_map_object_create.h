@@ -45,43 +45,8 @@ public:
         return byteArray;
     }
 
-    QString UUID() const{
-        return data_marker.uuid;
-    }
-
-    uint8_t type_object() const{
-        return data_marker.type_obj_id;
-    }
-    uint8_t subtype_object() const{
-        return data_marker.subtype_obj_id;
-    }
-
-    QString Name() const{
-        return data_marker.name;
-    }
-
-    QString Info() const{
-        return data_marker.info;
-    }
-
-    QColor ColorName() const{
-        return data_marker.ColorName();
-    }
-    uint8_t ColorName_R() const{
-        return data_marker.color_name_r;
-    }
-    uint8_t ColorName_G() const{
-        return data_marker.color_name_g;
-    }
-    uint8_t ColorName_B() const{
-        return data_marker.color_name_b;
-    }
-
-    double Lat() const{
-        return data_marker.lat;
-    }
-    double Lon() const{
-        return data_marker.lon;
+    const data_map_marker& getDataMarker() const{
+        return data_marker;
     }
 
 private:

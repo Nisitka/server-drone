@@ -27,8 +27,14 @@ private slots:
     void initClient(const QString& uuid,
                     ISocketAdapter* clientSock);
 
+    // Отправить данные конкретному пользователю
     void sendByteArray(const QString& login,
                        const QByteArray& data);
+
+    // Отправить всем клиентам за исключением определенных
+    void sendByteArrayAllUsersExcept(const QStringList& excepted_logins,
+                                     const QByteArray& data);
+
 
     // Удалить соединение с клиентом
     void removeClientSocket();

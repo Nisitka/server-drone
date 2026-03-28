@@ -11,16 +11,25 @@ class TaskCreateMapMarker: public TaskDataBase
 {
 public:
     TaskCreateMapMarker(const command_server_map_object_create& m):
-        TaskDataBase("SELECT __CreateMarker(" + QString::number(m.Lat()) + ","
-                                              + QString::number(m.Lon()) + ","
-                                              + QString::number(m.type_object()) + ","
-                                              + QString::number(m.subtype_object()) + ","
-                                              + "'" + m.Name() + "',"
-                                              + "'" + m.Info() + "',"
-    + "ARRAY["  + QString::number(m.ColorName_R()) + ","
-                + QString::number(m.ColorName_G()) + ","
-                + QString::number(m.ColorName_B()) + "]::smallint[],"
-    + ");")
+    TaskDataBase("SELECT __CreateMarkerById("
+        + QString::number(m.getDataMarker().lat) + ","
+        + QString::number(m.getDataMarker().lon) + ","
+
+        + "'" + m.getDataMarker().name + "',"
+        + "'" + m.getDataMarker().info + "',"
+
+        + "ARRAY["  + QString::number(m.getDataMarker().colorName.red()) + ","
+        + QString::number(m.getDataMarker().colorName.green()) + ","
+        + QString::number(m.getDataMarker().colorName.blue()) + "]::smallint[],"
+
+        + "'" + QString::number(m.getDataMarker().type_obj_id) + "-"
+        + QString::number(m.getDataMarker().subtype_obj_id) + "',"
+
+        + "'" + m.getDataMarker().uuid + "',"
+
+        + "'" + m.getDataMarker().lastUpdate.toString() + "',"
+
+        + ");")
     {/* ... */}
 
     bool processRequestResult(QSqlQuery& query) override final{

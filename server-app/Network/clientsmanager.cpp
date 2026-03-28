@@ -5,7 +5,12 @@
 //
 #include "../DataBase/Tasks/TaskUserLogOut.h"
 #include "../DataBase/Tasks/TaskRequreqMapMarkers.h"
+#include "../DataBase/Tasks/TaskUpdateMapMarker.h"
+#include "../DataBase/Tasks/TaskCreateMapMarker.h"
+
 #include "../../common/protocol/commands_server/command_server.h"
+#include "../../common/protocol/commands_server/commands_server_map/command_server_map_object_update.h"
+#include "../../common/protocol/commands_server/commands_server_map/command_server_map_object_create.h"
 
 #include "../../common/protocol/commands_client/commands_client_user/commands_client_user_result_auth.h"
 
@@ -64,6 +69,16 @@ void ClientsManager::sendByteArray(const QString& login,
     }
     else
         qDebug() << "ClientsManager:: try send byteArray unknown client -" << login;
+}
+
+void ClientsManager::sendByteArrayAllUsersExcept(const QStringList& excepted_logins,
+                                                 const QByteArray& data){
+    for (auto it=clients.begin(); it!=clients.end(); ++it){
+        const QString login = it.key();
+
+        if (!excepted_logins.contains(login))
+            sendByteArray(login, data);
+    }
 }
 
 void ClientsManager::removeClientSocket()
@@ -136,6 +151,24 @@ void ClientsManager::processingMessage(const QByteArray& msg,
         qDebug() << "id_command_server_map_requreq_objects";
         taskQueue->enqueue(new TaskRequreqMapMarkers(Actions(), login_client));
         break;
+
+    case id_command_server_map_object_update:{
+        qDebug() << "id_command_server_map_object_update";
+
+        // Декодируем сообщение и добавляем задачу на отработку
+        command_server_map_object_update cmd_update_marker(msg);
+        taskQueue->enqueue(new TaskUpdateMapMarker(Actions(),
+                                                   login_client,
+                                                   cmd_update_marker));
+        break;}
+
+    case id_command_server_map_object_create:{
+        qDebug() << "id_command_server_map_object_create";
+
+        command_server_map_object_create cmd_create_marker(msg);
+        taskQueue->enqueue(new TaskCreateMapMarker(cmd_create_marker));
+        break;}
+
     default:
         qDebug() << "id_command_server unknown:" << id_command;
         break;

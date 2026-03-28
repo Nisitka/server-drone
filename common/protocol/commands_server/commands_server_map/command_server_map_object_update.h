@@ -35,6 +35,10 @@ public:
         return byteArray;
     }
 
+    const data_map_marker& getDataMarker() const{
+        return data_marker;
+    }
+
 private:
     data_map_marker data_marker;
 };

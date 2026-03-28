@@ -15,6 +15,14 @@ signals:
     // Отправить сообщение клиенту
     void sendByteArray(const QString& login,
                        const QByteArray& data);
+
+    // Отправить конкретным пользователям
+    void sendByteArrayToUsers(const QStringList& logins,
+                              const QByteArray& data);
+
+    // Отправить всем клиентам за исключением определенных
+    void sendByteArrayAllUsersExcept(const QStringList& excepted_logins,
+                                     const QByteArray& data);
 };
 
 #endif // ACTIONSCLIENTSMANAGER_H

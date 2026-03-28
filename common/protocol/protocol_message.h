@@ -69,6 +69,20 @@ inline QString readStringFromByteArray(const QByteArray& byteArray, int& pos_end
     return QString::fromUtf8(readStrData);
 }
 
+inline QString readStringFromByteArray(const QByteArray& byteArray, int offset = 0){
+    const char* dataPtr = byteArray.constData();
+
+    // Считаем длину строки
+    int readStrLen;
+    memcpy(&readStrLen, dataPtr + offset, sizeof(readStrLen));
+    offset += sizeof(readStrLen);
+
+    // Считаем строку
+    const QByteArray readStrData(dataPtr + offset, readStrLen);
+
+    return QString::fromUtf8(readStrData);
+}
+
 }
 
 #endif // PROTOCOL_MESSAGE_H

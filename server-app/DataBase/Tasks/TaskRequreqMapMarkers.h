@@ -21,7 +21,6 @@ public:
 
     bool processRequestResult(QSqlQuery& query) override final
     {
-
         int count = query.size();
         if (count < 0){
             command_client_map_result_requreq_markers cmd_result(command_client_map_result_requreq_markers::invalid, 0);
@@ -39,8 +38,8 @@ public:
             QString uuid = query.value(0).toString();
 
             // Координаты
-            double lat = query.value(2).toDouble();
-            double lon = query.value(1).toDouble();
+            double lat = query.value(1).toDouble();
+            double lon = query.value(2).toDouble();
 
             // Имя метки
             const QString name = query.value(3).toString();

@@ -11,7 +11,7 @@ class TaskCreateMapMarker: public TaskDataBase
 {
 public:
     TaskCreateMapMarker(const command_server_map_object_create& m):
-    TaskDataBase("SELECT __CreateMarkerById("
+    TaskDataBase("SELECT * FROM __CreateMarkerById("
         + QString::number(m.getDataMarker().lat) + ","
         + QString::number(m.getDataMarker().lon) + ","
 
@@ -20,14 +20,14 @@ public:
 
         + "ARRAY["  + QString::number(m.getDataMarker().colorName.red()) + ","
         + QString::number(m.getDataMarker().colorName.green()) + ","
-        + QString::number(m.getDataMarker().colorName.blue()) + "]::smallint[],"
+        + QString::number(m.getDataMarker().colorName.blue()) + "],"
 
         + "'" + QString::number(m.getDataMarker().type_obj_id) + "-"
         + QString::number(m.getDataMarker().subtype_obj_id) + "',"
 
         + "'" + m.getDataMarker().uuid + "',"
 
-        + "'" + m.getDataMarker().lastUpdate.toString() + "',"
+        + "'" + m.getDataMarker().lastUpdate.toString(data_map_marker::format_lastUpdate) + "'"
 
         + ");")
     {/* ... */}

@@ -18,13 +18,13 @@ public:
     login(login_client),
     clientsManager(clientsManager_),
     data_marker(cmd.getDataMarker()),
-    TaskDataBase("SELECT __ChangeInfoMarker('" +
+    TaskDataBase("SELECT * FROM __ChangeInfoMarker('" +
         cmd.getDataMarker().uuid + "',"
 
         + QString::number(cmd.getDataMarker().lat) + ","
         + QString::number(cmd.getDataMarker().lon) + ","
 
-        + "'" + cmd.getDataMarker().lastUpdate.toString() + "',"
+        + "'" + cmd.getDataMarker().lastUpdate.toString(data_map_marker::format_lastUpdate) + "',"
 
         + "'" + cmd.getDataMarker().name + "',"
         + "'" + cmd.getDataMarker().info + "',"
@@ -46,6 +46,7 @@ public:
             int code = query.value(0).toInt();
             switch (code) {
             case 0:{
+                qDebug() << "TaskUpdateMapMarker: code 0";
                 command_client_map_object_update cmd_update_marker(data_marker);
 
                 /// Уведомляем других об изменениях
@@ -55,6 +56,7 @@ public:
                 break;}
 
             case 1:
+                qDebug() << "TaskUpdateMapMarker: code 1";
                 /// Сообщаем клиенту что не удалось обновить данные метки
 
                 break;

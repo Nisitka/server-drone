@@ -65,7 +65,6 @@ public:
                 qDebug() << "TaskUpdateMapMarker: unknown return code query...";
                 break;
             }
-
         }
 
         return true;

@@ -16,6 +16,7 @@ enum id_command_client: uint8_t{
 
     /// Команды, связанные с картой
     id_command_client_map_object_update,
+    id_command_client_map_object_removed,
     id_command_client_map_result_requreq_markers,
     id_command_client_map_requreq_data_markers
 };

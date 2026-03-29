@@ -7,10 +7,12 @@
 #include "../DataBase/Tasks/TaskRequreqMapMarkers.h"
 #include "../DataBase/Tasks/TaskUpdateMapMarker.h"
 #include "../DataBase/Tasks/TaskCreateMapMarker.h"
+#include "../DataBase/Tasks/TaskRemoveMapMarker.h"
 
 #include "../../common/protocol/commands_server/command_server.h"
 #include "../../common/protocol/commands_server/commands_server_map/command_server_map_object_update.h"
 #include "../../common/protocol/commands_server/commands_server_map/command_server_map_object_create.h"
+#include "../../common/protocol/commands_server/commands_server_map/command_server_map_remove_object.h"
 
 #include "../../common/protocol/commands_client/commands_client_user/commands_client_user_result_auth.h"
 
@@ -167,6 +169,15 @@ void ClientsManager::processingMessage(const QByteArray& msg,
 
         command_server_map_object_create cmd_create_marker(msg);
         taskQueue->enqueue(new TaskCreateMapMarker(cmd_create_marker));
+        break;}
+
+    case id_command_server_map_object_remove:{
+        qDebug() << "id_command_server_map_object_remove";
+
+        command_server_map_remove_object cmd_remove_marker(msg);
+        taskQueue->enqueue(new TaskRemoveMapMarker(Actions(),
+                                                   login_client,
+                                                   cmd_remove_marker));
         break;}
 
     default:

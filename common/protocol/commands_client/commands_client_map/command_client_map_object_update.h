@@ -21,7 +21,7 @@ public:
     command_client_map_object_update(const data_map_marker& data):
         protocol_message(id_msg_command_client),
         command(id_command_client_map_object_update),
-        data_marker(data) // минуем id_msg, id_cmd
+        data_marker(data)
     { /* ... */}
 
     QByteArray toByteArray() const override final{
@@ -35,8 +35,7 @@ public:
         return byteArray;
     }
 
-private:
-    data_map_marker data_marker;
+    const data_map_marker data_marker;
 
 };
 

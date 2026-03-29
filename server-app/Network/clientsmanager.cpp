@@ -28,6 +28,8 @@ ClientsManager::ClientsManager(QueueTaskDB* taskQueue_):
             this,    &ClientsManager::initClient);
     connect(actions, &ActionsClientsManager::sendByteArray,
             this,    &ClientsManager::sendByteArray);
+    connect(actions, &ActionsClientsManager::sendByteArrayAllUsersExcept,
+            this,    &ClientsManager::sendByteArrayAllUsersExcept);
 }
 
 ActionsClientsManager* ClientsManager::Actions() const{
@@ -168,7 +170,9 @@ void ClientsManager::processingMessage(const QByteArray& msg,
         qDebug() << "id_command_server_map_object_create";
 
         command_server_map_object_create cmd_create_marker(msg);
-        taskQueue->enqueue(new TaskCreateMapMarker(cmd_create_marker));
+        taskQueue->enqueue(new TaskCreateMapMarker(Actions(),
+                                                   login_client,
+                                                   cmd_create_marker));
         break;}
 
     case id_command_server_map_object_remove:{

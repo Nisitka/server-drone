@@ -150,34 +150,15 @@ void Server::removeSocketFromNotAuthSockets(ISocketAdapter* client)
 
 void Server::runTest()
 {
-    //ISocketAdapter* client = new ServerSocketAdapter(new QTcpSocket);
-
-    // for (int i=0; i<1000; i++){
-    //     command_server_user_auth command("djigurda", "12345678");
-    //     TaskDataBase* task = nullptr;
-
-    //     if (i%2)
-    //         task = new TaskUserAuth(clientsManager->Actions(), client,
-    //                                 command.Login(), command.Password());
-    //     else
-    //         task = new TaskUserLogOut(command.Login());
-
-    //     if (task)
-    //         taskQueue->enqueue(task);
-
-    //     QThread::msleep(1);
-    // }
-
     /// Завершаем все сессии
-    command_server_user_auth command("djigurda", "12345678");
-    TaskDataBase* task = new TaskUserLogOut(command.Login());
-    taskQueue->enqueue(task);
+    taskQueue->enqueue(new TaskUserLogOut("djigurda"));
+    taskQueue->enqueue(new TaskUserLogOut("user1"));
+    taskQueue->enqueue(new TaskUserLogOut("user2"));
+    taskQueue->enqueue(new TaskUserLogOut("admin"));
 }
 
 bool Server::run()
 {
-
-
     if (listen(QHostAddress::Any, configParams["port"].toInt())) {
 
         emit runSqlExecuters(configParams["database_host"],

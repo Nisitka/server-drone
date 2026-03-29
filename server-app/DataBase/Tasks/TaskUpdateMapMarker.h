@@ -31,7 +31,7 @@ public:
 
         + "ARRAY["  + QString::number(cmd.getDataMarker().colorName.red()) + ","
         + QString::number(cmd.getDataMarker().colorName.green()) + ","
-        + QString::number(cmd.getDataMarker().colorName.blue()) + "]::smallint[],"
+        + QString::number(cmd.getDataMarker().colorName.blue()) + "],"
 
         + "'" + QString::number(cmd.getDataMarker().type_obj_id) + "-"
         + QString::number(cmd.getDataMarker().subtype_obj_id) + "'"

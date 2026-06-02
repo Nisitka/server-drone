@@ -11,6 +11,8 @@ public:
     command(uint8_t id_cmd_): id_cmd(id_cmd_){
         /* ... */
     }
+    virtual ~command() = default;
+
     uint8_t id_command() const {return id_cmd;}
 
 protected:

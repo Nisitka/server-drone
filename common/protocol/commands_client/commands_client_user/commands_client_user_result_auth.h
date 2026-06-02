@@ -8,49 +8,66 @@
 
 namespace server_protocol {
 
-class command_client_user_result_auth: public protocol_message,
-                                       public command{
+class command_client_user_result_auth : public protocol_message,
+                                        public command {
 public:
-    enum results_auth: uint8_t{
+    enum results_auth : uint8_t {
         successfully,
         invalid_login_or_password,
         invalid
     };
 
-    command_client_user_result_auth(const QByteArray& data):
+    // -------------------------------------------------------------
+    // Сценарий 1: ПРИЕМ НА СТОРОНЕ КЛИЕНТА (Конструктор десериализации)
+    // -------------------------------------------------------------
+    // Сюда передается чистый bodyData (уже без 4 байт сетевого заголовка протокола)
+    command_client_user_result_auth(const QByteArray& bodyData) :
         protocol_message(id_msg_command_client),
-        command(id_command_client_user_result_auth)
+        command(id_command_client_user_result_auth),
+        value(invalid) // Дефолтное значение на случай повреждения пакета
     {
-        int posData = sizeof(uint8_t)*2; // минуем id_msg, id_cmd
+        // Сохраняем пришедшие байты в базовый класс
+        this->data = bodyData;
 
-        const char* dataPtr = data.constData();
-        memcpy(&value, dataPtr + posData, sizeof(value));
+        int offset = 0;
+
+        // Пропускаем id_cmd (1 байт)
+        if (offset + sizeof(uint8_t) <= static_cast<size_t>(data.size())) {
+            offset += sizeof(uint8_t);
+        }
+
+        // Безопасно считываем 1 байт результата (value) с проверкой границ
+        if (offset + sizeof(uint8_t) <= static_cast<size_t>(data.size())) {
+            value = static_cast<results_auth>(data[offset]);
+        } else {
+            qWarning() << "command_client_user_result_auth: Недостаточно байт для чтения поля value!";
+        }
     }
 
-    command_client_user_result_auth(results_auth value_):
+    // -------------------------------------------------------------
+    // Сценарий 2: ОТПРАВКА С СЕРВЕРА (Конструктор сериализации)
+    // -------------------------------------------------------------
+    command_client_user_result_auth(results_auth value_) :
         protocol_message(id_msg_command_client),
         command(id_command_client_user_result_auth),
         value(value_)
-    { /* ... */}
-
-    QByteArray toByteArray() const override final
     {
-        QByteArray byteArray;
+        // Формируем внутреннее тело (data). Внешний заголовок базовый класс добавит сам!
 
-        byteArray.append(static_cast<char>(id_msg));
-        byteArray.append(static_cast<char>(id_cmd));
+        // Сначала добавляем идентификатор конкретной команды (1 байт)
+        data.append(static_cast<char>(id_cmd));
 
-        byteArray.append(static_cast<char>(value));
-
-        return byteArray;
+        // Добавляем 1 байт результата авторизации
+        data.append(static_cast<char>(value));
     }
 
-    uint8_t Value() const{
+    // Возвращаем строгое перечисление вместо uint8_t для удобства в switch/case
+    results_auth Value() const {
         return value;
     }
 
 private:
-    uint8_t value;
+    results_auth value;
 };
 
 }

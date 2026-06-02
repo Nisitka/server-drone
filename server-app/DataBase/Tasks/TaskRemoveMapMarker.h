@@ -10,26 +10,40 @@
 
 using namespace server_protocol;
 
-class TaskRemoveMapMarker: public TaskDataBase
+#include "./taskdatabase.h"
+#include "../../Network/ActionsClientsManager.h"
+
+#include "../../../common/protocol/commands_server/commands_server_map/command_server_map_remove_object.h"
+#include "../../../common/protocol/commands_client/commands_client_map/command_client_map_object_removed.h"
+
+using namespace server_protocol;
+
+class TaskRemoveMapMarker : public TaskDataBase
 {
 public:
     TaskRemoveMapMarker(ActionsClientsManager* clientsManager_,
                         const QString& login_client,
-                        const command_server_map_remove_object& cmd):
-        TaskDataBase("SELECT * FROM __DeleteObject('"+ cmd.uuid_marker +"');"),
+                        const command_server_map_remove_object& cmd) :
+        // Защищаем базу данных от SQL-инъекций, экранируя кавычки в пришедшем из сети UUID
+        TaskDataBase("SELECT * FROM __DeleteObject('" + QString(cmd.uuid_marker).replace("'", "''") + "');"),
         clientsManager(clientsManager_),
         login(login_client),
         uuid_marker(cmd.uuid_marker)
     {}
 
-    bool processRequestResult(QSqlQuery& query) override final{
-        /// Уведомляюся все клиенты о том, что метка удалена
+    bool processRequestResult(QSqlQuery& query) override final {
+        // Проверяем, вернула ли база данных успешный статус удаления (если ваша функция __DeleteObject возвращает код)
+        // В вашем исходном коде проверки query.next() не было, но для надежности её стоит делать, если функция что-то возвращает:
+        // if (query.next() && query.value(0).toInt() != 0) return false;
+
+        /// Уведомляются все клиенты о том, что метка удалена
         command_client_map_object_removed cmd_obj_removed(uuid_marker);
 
-        // За исключением того клиента, который сообщил об удалении
+        // За исключением того клиента, который сообщил об удалении (инициатора)
         emit clientsManager->sendByteArrayAllUsersExcept(QStringList{login},
                                                          cmd_obj_removed.toByteArray());
 
+        qDebug() << "TaskRemoveMapMarker: Объект" << uuid_marker << "успешно удален. Рассылка отправлена.";
         return true;
     }
 

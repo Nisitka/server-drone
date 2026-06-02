@@ -2,6 +2,7 @@
 #define COMMAND_SERVER_H
 
 #include <QByteArray>
+
 #include <QDebug>
 
 namespace server_protocol {
@@ -22,14 +23,16 @@ enum id_command_server: uint8_t{
     id_command_server_map_requreq_objects
 };
 
-inline uint8_t get_id_command_server(const QByteArray& data_msg) {
-    if (!data_msg.isEmpty()) {
-        // id сообщения лежит в самом начале
-        return static_cast<uint8_t>(data_msg[1]);
-    }
-    else {
-        qDebug() << "get_msg_id: data_msg.isEmpty()!";
-        return  id_command_server_unknown;
+/**
+ * @brief Безопасное извлечение ID серверной команды из чистого тела пакета
+ */
+inline id_command_server get_id_command_server(const QByteArray& bodyData) {
+    // В теле команды должен быть как минимум 1 байт (сам id_cmd)
+    if (bodyData.size() >= 1) {
+        return static_cast<id_command_server>(bodyData[0]);
+    } else {
+        qDebug() << "get_id_command_server: bodyData слишком мал или пуст!";
+        return id_command_server_unknown;
     }
 }
 

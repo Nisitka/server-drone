@@ -9,32 +9,53 @@
 
 namespace server_protocol {
 
-class command_client_map_object_created:public protocol_message,
-                                        public command{
+class command_client_map_object_created : public protocol_message,
+                                          public command {
 public:
-    command_client_map_object_created(const QByteArray& data):
+    // -------------------------------------------------------------
+    // Сценарий 1: ПРИЕМ НА КЛИЕНТЕ (Конструктор десериализации)
+    // -------------------------------------------------------------
+    // Сюда передается чистый bodyData (уже без 4 байт сетевого заголовка протокола)
+    command_client_map_object_created(const QByteArray& bodyData) :
         protocol_message(id_msg_command_client),
         command(id_command_client_map_object_created),
-        data_marker(data, sizeof(uint8_t)*2) // минуем id_msg, id_cmd
-    { /* ... */}
+        // Безопасно инициализируем константный маркер через лямбду со смещением offset
+        data_marker([&]() {
+            int offset = 0;
+            // Пропускаем id_cmd (1 байт)
+            if (offset + sizeof(uint8_t) <= static_cast<size_t>(bodyData.size())) {
+                offset += sizeof(uint8_t);
+            }
+            // Конструктор маркера вычитает свои поля и сам обновит offset
+            return data_map_marker(bodyData, offset);
+        }())
+    {
+        // Сохраняем пришедшие байты в базовый класс
+        this->data = bodyData;
+    }
 
-    command_client_map_object_created(const data_map_marker& data_marker_):
+    // -------------------------------------------------------------
+    // Сценарий 2: ОТПРАВКА С СЕРВЕРА (Конструктор сериализации)
+    // -------------------------------------------------------------
+    command_client_map_object_created(const data_map_marker& data_marker_) :
         protocol_message(id_msg_command_client),
         command(id_command_client_map_object_created),
         data_marker(data_marker_)
-    { /* ... */}
+    {
+        // Формируем внутреннее тело (data). Внешний заголовок базовый класс добавит сам!
 
-    QByteArray toByteArray() const override final{
-        QByteArray byteArray;
+        // Сначала добавляем идентификатор конкретной команды (1 байт)
+        data.append(static_cast<char>(id_cmd));
 
-        byteArray.append(static_cast<char>(id_msg));
-        byteArray.append(static_cast<char>(id_cmd));
-
-        data_marker.appendToByteArray(byteArray);
-
-        return byteArray;
+        // Добавляем прикладные данные созданного маркера карты
+        data_marker.appendToByteArray(data);
     }
 
+    const data_map_marker& getDataMarker() const {
+        return data_marker;
+    }
+
+    // Поле осталось public и const, как в вашей исходной структуре
     const data_map_marker data_marker;
 };
 

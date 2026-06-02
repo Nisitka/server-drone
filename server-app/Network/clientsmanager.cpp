@@ -2,7 +2,12 @@
 
 #include <QDebug>
 
-//
+#include "clientsmanager.h"
+#include <QDebug>
+
+// Подключаем фабрику серверных команд
+#include "../../common/protocol/commands_server/ServerCommandFactory.h"
+
 #include "../DataBase/Tasks/TaskUserLogOut.h"
 #include "../DataBase/Tasks/TaskRequreqMapMarkers.h"
 #include "../DataBase/Tasks/TaskUpdateMapMarker.h"
@@ -13,17 +18,18 @@
 #include "../../common/protocol/commands_server/commands_server_map/command_server_map_object_update.h"
 #include "../../common/protocol/commands_server/commands_server_map/command_server_map_object_create.h"
 #include "../../common/protocol/commands_server/commands_server_map/command_server_map_remove_object.h"
+#include "../../common/protocol/commands_server/commands_server_map/command_server_map_requreq_objects.h"
 
 #include "../../common/protocol/commands_client/commands_client_user/commands_client_user_result_auth.h"
 
 using namespace server_protocol;
 
-ClientsManager::ClientsManager(QueueTaskDB* taskQueue_):
+ClientsManager::ClientsManager(QueueTaskDB* taskQueue_) :
     QObject(),
     taskQueue(taskQueue_)
 {
     /// Интерфейс по асинхронной работе с клиентами
-    actions = new ActionsClientsManager;
+    actions = new ActionsClientsManager();
     connect(actions, &ActionsClientsManager::addClient,
             this,    &ClientsManager::initClient);
     connect(actions, &ActionsClientsManager::sendByteArray,
@@ -32,15 +38,15 @@ ClientsManager::ClientsManager(QueueTaskDB* taskQueue_):
             this,    &ClientsManager::sendByteArrayAllUsersExcept);
 }
 
-ActionsClientsManager* ClientsManager::Actions() const{
+ActionsClientsManager* ClientsManager::Actions() const {
     return actions;
 }
 
 void ClientsManager::initClient(const QString& uuidClient, ISocketAdapter* socket)
 {
-    if (clients.contains(uuidClient)){
+    if (clients.contains(uuidClient)) {
         qDebug() << "ClientsManager: попытка добавить уже авторизованного клиента -" << uuidClient;
-        return ;
+        return;
     }
 
     // Сохраняем клиента
@@ -54,7 +60,7 @@ void ClientsManager::initClient(const QString& uuidClient, ISocketAdapter* socke
     connect(socket, &ISocketAdapter::disconnected,
             this,   &ClientsManager::removeClientSocket);
 
-    ///
+    // Отправляем успешный результат авторизации, используя автоматическую упаковку базового класса
     command_client_user_result_auth cmd(command_client_user_result_auth::successfully);
     emit socket->trSendByteArray(cmd.toByteArray());
 
@@ -62,24 +68,22 @@ void ClientsManager::initClient(const QString& uuidClient, ISocketAdapter* socke
     emit itializedClient(socket);
 }
 
-void ClientsManager::sendByteArray(const QString& login,
-                                   const QByteArray& data)
+void ClientsManager::sendByteArray(const QString& login, const QByteArray& data)
 {
-    if (clients.contains(login)){
+    if (clients.contains(login)) {
         ISocketAdapter* clientSocket = clients.value(login);
-
         if (clientSocket)
             emit clientSocket->trSendByteArray(data);
     }
-    else
+    else {
         qDebug() << "ClientsManager:: try send byteArray unknown client -" << login;
+    }
 }
 
-void ClientsManager::sendByteArrayAllUsersExcept(const QStringList& excepted_logins,
-                                                 const QByteArray& data){
-    for (auto it=clients.begin(); it!=clients.end(); ++it){
+void ClientsManager::sendByteArrayAllUsersExcept(const QStringList& excepted_logins, const QByteArray& data)
+{
+    for (auto it = clients.begin(); it != clients.end(); ++it) {
         const QString login = it.key();
-
         if (!excepted_logins.contains(login))
             sendByteArray(login, data);
     }
@@ -87,13 +91,13 @@ void ClientsManager::sendByteArrayAllUsersExcept(const QStringList& excepted_log
 
 void ClientsManager::removeClientSocket()
 {
-    ISocketAdapter* clientSocket = static_cast<ServerSocketAdapter*>(sender());
+    // Безопасное приведение к вашему типу реализации адаптера (например, SocketAdapter)
+    ISocketAdapter* clientSocket = static_cast<ISocketAdapter*>(sender());
 
-    /// Ищем нужного клиента и удялем его
+    /// Ищем нужного клиента и удаляем его
     QString login;
     for (auto it = clients.begin(); it != clients.end(); ++it) {
         if (it.value() == clientSocket) {
-
             login = it.key();
             clients.erase(it);
             break;
@@ -102,103 +106,108 @@ void ClientsManager::removeClientSocket()
 
     /// Задача на обновление данных в базе
     if (!login.isEmpty())
-        taskQueue->enqueue(new TaskUserLogOut(login));
+        taskQueue->enqueue(new TaskUserLogOut(Actions(), login));
 
-    delete clientSocket;
-    qDebug() << "client removed";
+    // Важно: так как SocketAdapter наследует QObject и имеет внутри deleteLater(),
+    // объект безопаснее удалять через deleteLater, а не прямой delete.
+    clientSocket->deleteLater();
+    qDebug() << "client removed:" << login;
 }
 
 void ClientsManager::acceptMessageFromSocket()
 {
-    ISocketAdapter* client = static_cast<ServerSocketAdapter*>(sender());
+    ISocketAdapter* client = static_cast<ISocketAdapter*>(sender());
     const QString login = socketToLogin(client);
 
-    // Сообщение в сыром виде
-    const QByteArray& msg = client->getCurrentMessage();
+    if (login.isEmpty()) {
+        qDebug() << "ClientsManager: получен пакет от неавторизованного или неизвестного сокета!";
+        return;
+    }
 
-    // Обрабатываем
-    if (!msg.isEmpty() && !login.isEmpty())
-        processingMessage(msg, login);
+    // Проверяем тип сообщения верхнего уровня через геттер адаптера
+    server_protocol::id_message msgType = client->getLastMsgId();
+    if (msgType != id_msg_command_server) {
+        qDebug() << "ClientsManager: тип сообщения не является серверной командой:" << msgType;
+        return;
+    }
+
+    // Забираем чистое тело сообщения (уже без 4 байт заголовка протокола)
+    const QByteArray& bodyData = client->getCurrentMessage();
+
+    if (!bodyData.isEmpty())
+        processingMessage(bodyData, login);
     else
-        qDebug() << "ClientsManager: попытка обработать пустое сообщение!";
+        qDebug() << "ClientsManager: получено пустое тело команды!";
 }
 
-QString ClientsManager::socketToLogin(ISocketAdapter* socket) const{
-    // Итерация по всем парам ключ-значение в QMap
+QString ClientsManager::socketToLogin(ISocketAdapter* socket) const
+{
     for (auto it = clients.constBegin(); it != clients.constEnd(); ++it) {
-
-        // Если значение совпадает с искомым, возарвщаем его ключ
         if (it.value() == socket) {
             return it.key();
         }
     }
-
     return QString();
 }
 
-void ClientsManager::processingMessage(const QByteArray& msg,
-                                       const QString& login_client)
+void ClientsManager::processingMessage(const QByteArray& bodyData, const QString& login_client)
 {
-    // Тип принятого сообщения
-    uint8_t id_msg = protocol_message::get_msg_id(msg);
-    qDebug() << "processing message, id_message:" << id_msg;
-    if (id_msg != id_msg_command_server){
-        qDebug() << "id_msg != id_msg_command_server";
+    // Задействуем нашу полиморфную фабрику команд для автоматического разбора
+    std::unique_ptr<command> incomingCmd = ServerCommandFactory::createCommand(bodyData);
+
+    if (!incomingCmd) {
+        qWarning() << "ClientsManager: Фабрика не смогла распознать или распарсить команду!";
         return;
     }
 
-    /// В зависимости от сообщения инициируем задачу
-    // Из данных получаем конкретный номер команды
-    uint8_t id_command = get_id_command_server(msg);
+    uint8_t id_command = incomingCmd->id_command();
+    qDebug() << "ClientsManager: обработка команды id =" << id_command << "для клиента" << login_client;
+
     switch (id_command) {
-    case id_command_server_map_requreq_objects:
-        qDebug() << "id_command_server_map_requreq_objects";
+    case id_command_server_map_requreq_objects: {
         taskQueue->enqueue(new TaskRequreqMapMarkers(Actions(), login_client));
         break;
-
-    case id_command_server_map_object_update:{
-        qDebug() << "id_command_server_map_object_update";
-
-        // Декодируем сообщение и добавляем задачу на отработку
-        command_server_map_object_update cmd_update_marker(msg);
-        taskQueue->enqueue(new TaskUpdateMapMarker(Actions(),
-                                                   login_client,
-                                                   cmd_update_marker));
-        break;}
-
-    case id_command_server_map_object_create:{
-        qDebug() << "id_command_server_map_object_create";
-
-        command_server_map_object_create cmd_create_marker(msg);
-        taskQueue->enqueue(new TaskCreateMapMarker(Actions(),
-                                                   login_client,
-                                                   cmd_create_marker));
-        break;}
-
-    case id_command_server_map_object_remove:{
-        qDebug() << "id_command_server_map_object_remove";
-
-        command_server_map_remove_object cmd_remove_marker(msg);
-        taskQueue->enqueue(new TaskRemoveMapMarker(Actions(),
-                                                   login_client,
-                                                   cmd_remove_marker));
-        break;}
-
-    default:
-        qDebug() << "id_command_server unknown:" << id_command;
+    }
+    case id_command_server_map_object_update: {
+        // Безопасно приводим указатель к конкретному типу команды, чтобы передать его в задачу БД
+        auto* cmd = static_cast<command_server_map_object_update*>(incomingCmd.get());
+        // Передаем копию объекта команды (или ссылку, если Task принимает её так)
+        taskQueue->enqueue(new TaskUpdateMapMarker(Actions(), login_client, *cmd));
         break;
     }
+    case id_command_server_map_object_create: {
+        auto* cmd = static_cast<command_server_map_object_create*>(incomingCmd.get());
+        taskQueue->enqueue(new TaskCreateMapMarker(Actions(), login_client, *cmd));
+        break;
+    }
+    case id_command_server_map_object_remove: {
+        auto* cmd = static_cast<command_server_map_remove_object*>(incomingCmd.get());
+        taskQueue->enqueue(new TaskRemoveMapMarker(Actions(), login_client, *cmd));
+        break;
+    }
+    default:
+        qDebug() << "ClientsManager: Для команды id =" << id_command << "нет обработчика задач БД.";
+        break;
+    }
+    // Память объекта incomingCmd автоматически очистится здесь при выходе из области видимости
 }
 
 void ClientsManager::disconnectClient(const QString& uuidClient)
 {
-    clients[uuidClient]->disconnect();
+    if (clients.contains(uuidClient)) {
+        clients[uuidClient]->disconnect();
+    }
 }
 
-ClientsManager::~ClientsManager(){
-    // Закрываем сессии всех клиентов
+ClientsManager::~ClientsManager()
+{
+    // Закрываем сессии всех клиентов и уведомляем БД
     for (auto it = clients.begin(); it != clients.end(); ++it) {
-        /// Задача на обновление данных в базе
-        taskQueue->enqueue(new TaskUserLogOut(it.key()));
+        taskQueue->enqueue(new TaskUserLogOut(Actions(), it.key()));
+        if (it.value()) {
+            it.value()->disconnect();
+            it.value()->deleteLater();
+        }
     }
+    clients.clear();
 }

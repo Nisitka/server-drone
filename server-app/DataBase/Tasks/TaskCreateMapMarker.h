@@ -9,47 +9,64 @@
 
 using namespace server_protocol;
 
-class TaskCreateMapMarker: public TaskDataBase
+class TaskCreateMapMarker : public TaskDataBase
 {
 public:
     TaskCreateMapMarker(ActionsClientsManager* clientsManager_,
                         const QString& login_client,
-                        const command_server_map_object_create& m):
-    TaskDataBase("SELECT * FROM __CreateMarkerById("
-        + QString::number(m.getDataMarker().lat) + ","
-        + QString::number(m.getDataMarker().lon) + ","
-
-        + "'" + m.getDataMarker().name + "',"
-        + "'" + m.getDataMarker().info + "',"
-
-        + "ARRAY["  + QString::number(m.getDataMarker().colorName.red()) + ","
-        + QString::number(m.getDataMarker().colorName.green()) + ","
-        + QString::number(m.getDataMarker().colorName.blue()) + "],"
-
-        + "'" + QString::number(m.getDataMarker().type_obj_id) + "-"
-        + QString::number(m.getDataMarker().subtype_obj_id) + "',"
-
-        + "'" + m.getDataMarker().uuid + "',"
-
-        + "'" + m.getDataMarker().lastUpdate.toString(data_map_marker::format_lastUpdate) + "'"
-
-        + ");"),
+                        const command_server_map_object_create& m) :
+        // Передаем защищенный SQL-запрос в базовый класс
+        TaskDataBase(buildSecureQuery(m)),
         data_marker(m.getDataMarker()),
         login(login_client),
         clientsManager(clientsManager_)
     {/* ... */}
 
-    bool processRequestResult(QSqlQuery& query) override final{
+    bool processRequestResult(QSqlQuery& query) override final {
+        /// !!!!!!!!!!!!!!!!!
+        // Если __CreateMarkerById возвращает код статуса (например, 0 - успех, 1 - ошибка),
+        // здесь можно добавить проверку query.next()
 
         command_client_map_object_created cmd_obj_created(data_marker);
 
-        // Уведомляем другие клиенты об этом
+        // Уведомляем другие клиенты об этом, исключая автора
         emit clientsManager->sendByteArrayAllUsersExcept(QStringList{login},
                                                          cmd_obj_created.toByteArray());
 
+        qDebug() << "TaskCreateMapMarker: Объект успешно создан в БД. Рассылка выполнена.";
         return true;
     }
+
 private:
+    // Вспомогательный статический метод для чистой и безопасной сборки SQL-запроса
+    static QString buildSecureQuery(const command_server_map_object_create& m) {
+        const data_map_marker& marker = m.getDataMarker();
+
+        // Используем стандартную C-локаль, чтобы double ВСЕГДА форматировался с точкой (например, 55.751234)
+        QLocale cLocale(QLocale::C);
+        QString latStr = cLocale.toString(marker.lat, 'f', 7);
+        QString lonStr = cLocale.toString(marker.lon, 'f', 7);
+
+        // Защищаем базу данных, удваивая одиночные кавычки во всех пришедших из сети строках
+        QString safeUuid = QString(marker.get_uuid()).replace("'", "''");
+        QString safeName = QString(marker.name).replace("'", "''");
+        QString safeInfo = QString(marker.info).replace("'", "''");
+        QString safeTime = QString(marker.lastUpdate.toString(data_map_marker::format_lastUpdate)).replace("'", "''");
+
+        return "SELECT * FROM __CreateMarkerById("
+               + latStr + ","
+               + lonStr + ","
+               + "'" + safeName + "',"
+               + "'" + safeInfo + "',"
+               + "ARRAY[" + QString::number(marker.colorName.red()) + ","
+               + QString::number(marker.colorName.green()) + ","
+               + QString::number(marker.colorName.blue()) + "],"
+               + "'" + QString::number(marker.type_obj_id) + "-" + QString::number(marker.subtype_obj_id) + "',"
+               + "'" + safeUuid + "',"
+               + "'" + safeTime + "'"
+               + ");";
+    }
+
     ActionsClientsManager* clientsManager;
     const QString login;
     const data_map_marker data_marker;

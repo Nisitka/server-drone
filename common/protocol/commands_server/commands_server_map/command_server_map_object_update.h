@@ -9,33 +9,52 @@
 
 namespace server_protocol {
 
+// Обновить объект на карте:
 class command_server_map_object_update: public protocol_message,
-                                        public command{
+                                        public command {
 public:
-    command_server_map_object_update(const QByteArray& data):
+    // -------------------------------------------------------------
+    // Сценарий 1: ПРИЕМ ИЗ СЕТИ (Конструктор десериализации)
+    // -------------------------------------------------------------
+    // Сюда передается чистый bodyData (уже без 4 байт сетевого заголовка протокола)
+    command_server_map_object_update(const QByteArray& bodyData) :
         protocol_message(id_msg_command_server),
-        command(id_command_server_map_object_update),
-        data_marker(data, sizeof(uint8_t)*2) // минуем id_msg, id_cmd
-    { /* ... */}
+        command(id_command_server_map_object_update)
+    {
+        // Сохраняем пришедшие байты в базовый класс
+        this->data = bodyData;
 
-    command_server_map_object_update(const data_map_marker& data):
-        protocol_message(id_msg_command_server),
-        command(id_command_server_map_object_update),
-        data_marker(data)
-    { /* ... */}
+        int offset = 0;
 
-    QByteArray toByteArray() const override final{
-        QByteArray byteArray;
+        // Пропускаем id_cmd (1 байт), так как он идет первым в теле команды
+        if (offset + sizeof(uint8_t) <= static_cast<size_t>(data.size())) {
+            offset += sizeof(uint8_t);
+        }
 
-        byteArray.append(static_cast<char>(id_msg));
-        byteArray.append(static_cast<char>(id_cmd));
-
-        data_marker.appendToByteArray(byteArray);
-
-        return byteArray;
+        //  Передаем массив данных и ссылку на смещение в маркер карты.
+        // Конструктор маркера сам безопасно вычитает все свои поля и сдвинет offset.
+        data_marker = data_map_marker(data, offset);
     }
 
-    const data_map_marker& getDataMarker() const{
+    // -------------------------------------------------------------
+    // Сценарий 2: СОЗДАНИЕ ДЛЯ ОТПРАВКИ (Конструктор сериализации)
+    // -------------------------------------------------------------
+    command_server_map_object_update(const data_map_marker& data_marker_) :
+        protocol_message(id_msg_command_server),
+        command(id_command_server_map_object_update),
+        data_marker(data_marker_)
+    {
+        // Формируем внутреннее тело (data) для этой конкретной команды.
+        // Внешний заголовок (MagicByte, id_msg, общий размер) базовый класс соберет сам!
+
+        // Сначала добавляем идентификатор конкретной команды (1 байт)
+        data.append(static_cast<char>(id_cmd));
+
+        // Добавляем прикладные данные маркера карты
+        data_marker.appendToByteArray(data);
+    }
+
+    const data_map_marker& getDataMarker() const {
         return data_marker;
     }
 

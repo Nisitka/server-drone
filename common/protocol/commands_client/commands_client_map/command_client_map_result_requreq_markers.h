@@ -8,61 +8,91 @@
 
 namespace server_protocol {
 
-class command_client_map_result_requreq_markers: public protocol_message,
-                                                 public command{
+class command_client_map_result_requreq_markers : public protocol_message,
+                                                  public command {
 public:
-    enum results_requreq: uint8_t{
+    enum results_requreq : uint8_t {
         successfully,
         invalid
     };
 
-    uint8_t getResult() const{
-        return result;
-    }
-    uint8_t getCountMarkers() const{
-        return count_markers;
-    }
-
-    command_client_map_result_requreq_markers(const QByteArray& data):
+    // -------------------------------------------------------------
+    // Сценарий 1: ПРИЕМ НА КЛИЕНТЕ (Конструктор десериализации)
+    // -------------------------------------------------------------
+    // Сюда передается чистый bodyData (уже без 4 байт сетевого заголовка протокола)
+    command_client_map_result_requreq_markers(const QByteArray& bodyData) :
         protocol_message(id_msg_command_client),
-        command(id_command_client_map_result_requreq_markers)
+        command(id_command_client_map_result_requreq_markers),
+        result(invalid),
+        count_markers(0)
     {
-        int posData = sizeof(uint8_t)*2; // минуем id_msg, id_cmd
+        // Сохраняем пришедшие байты в базовый класс
+        this->data = bodyData;
 
-        const char* dataPtr = data.constData();
+        int offset = 0;
 
-        memcpy(&result, dataPtr + posData, sizeof(result));
-        posData += sizeof(result);
+        // Пропускаем id_cmd (1 байт)
+        if (offset + sizeof(uint8_t) <= static_cast<size_t>(data.size())) {
+            offset += sizeof(uint8_t);
+        }
 
-        memcpy(&count_markers, dataPtr + posData, sizeof(count_markers));
+        // Безопасно считываем 1 байт результата (result)
+        if (offset + sizeof(uint8_t) <= static_cast<size_t>(data.size())) {
+            result = static_cast<results_requreq>(data[offset]);
+            offset += sizeof(uint8_t);
+        } else {
+            qWarning() << "command_client_map_result_requreq_markers: Недостаточно байт для чтения поля result!";
+            return;
+        }
+
+        // Безопасно считываем 4 байта количества маркеров (Big-Endian)
+        if (offset + sizeof(uint32_t) <= static_cast<size_t>(data.size())) {
+            uint32_t rawCount;
+            std::memcpy(&rawCount, data.constData() + offset, sizeof(uint32_t));
+            count_markers = qFromBigEndian(rawCount);
+            offset += sizeof(uint32_t);
+        } else {
+            qWarning() << "command_client_map_result_requreq_markers: Недостаточно байт для чтения поля count_markers!";
+        }
     }
 
-    command_client_map_result_requreq_markers(results_requreq result_,
-                                              uint8_t count_markers_):
+    // -------------------------------------------------------------
+    // Сценарий 2: ОТПРАВКА С СЕРВЕРА (Конструктор сериализации)
+    // -------------------------------------------------------------
+    command_client_map_result_requreq_markers(results_requreq result_, uint32_t count_markers_) :
         protocol_message(id_msg_command_client),
         command(id_command_client_map_result_requreq_markers),
         result(result_),
         count_markers(count_markers_)
     {
+        // Формируем внутреннее тело (data). Внешний заголовок базовый класс добавит сам!
 
+        // Сначала добавляем идентификатор конкретной команды (1 байт)
+        data.append(static_cast<char>(id_cmd));
+
+        // Добавляем 1 байт результата запроса
+        data.append(static_cast<char>(result));
+
+        // Переводим количество маркеров в сетевой порядок байт (4 байта) и добавляем в буфер
+        uint32_t networkCount = qToBigEndian(count_markers);
+        data.append(reinterpret_cast<const char*>(&networkCount), sizeof(networkCount));
     }
 
-    QByteArray toByteArray() const override final
-    {
-        QByteArray byteArray;
+    // Метод toByteArray() удален. Сборка происходит автоматически в базовом классе.
 
-        byteArray.append(static_cast<char>(id_msg));
-        byteArray.append(static_cast<char>(id_cmd));
+    // Возвращаем строгое перечисление вместо uint8_t для удобства в switch/case
+    results_requreq getResult() const {
+        return result;
+    }
 
-        byteArray.append(static_cast<char>(result));
-        byteArray.append(static_cast<char>(count_markers));
-
-        return byteArray;
+    uint32_t getCountMarkers() const {
+        // Возвращаем uint32_t для поддержки больших списков
+        return count_markers;
     }
 
 private:
-    uint8_t result;
-    uint8_t count_markers;
+    results_requreq result;
+    uint32_t count_markers; // Заменили на uint32_t для кроссплатформенности и масштабируемости
 };
 
 }

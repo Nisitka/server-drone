@@ -1,27 +1,39 @@
 #ifndef SOCKETADAPTER_H
 # define SOCKETADAPTER_H
 
+#include "../protocol/protocol_message.h"
+
 # include "isocketadapter.h"
 
-class QTcpSocket;
+#include <QTcpSocket>
+#include <QByteArray>
+#include "../protocol/protocol_message.h"
+#include "isocketadapter.h"
+
 class SocketAdapter: public ISocketAdapter {
-  Q_OBJECT
+    Q_OBJECT
+
+public:
+    explicit SocketAdapter(QTcpSocket *pSock = nullptr);
+    virtual ~SocketAdapter();
+
+    // Геттеры для внешних фабрик (вызываются в слоте, подключенном к сигналу message())
+    server_protocol::id_message getLastMsgId() const { return lastMsgId; }
+    const QByteArray& getCurrentMessage() const { return currentMessage; }
 
 public slots:
     // Отключить соединение
     void disconnect();
 
-public:
-    SocketAdapter(QTcpSocket *pSock = nullptr);
-    virtual ~SocketAdapter();
-
 protected slots:
     void readyRead();
+
+    // Переопределение метода отправки данных
     void sendByteArray(const QByteArray& data) override final;
 
 protected:
     QTcpSocket* tcpSocket;
-    qint16 msgSize;
+
 };
 
 #endif // SOCKETADAPTER_H

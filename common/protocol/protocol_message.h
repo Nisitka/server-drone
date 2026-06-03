@@ -13,14 +13,14 @@ namespace server_protocol {
 inline const uint8_t MagicByte = 0xEF; // 239 в dec (или 0xFE = 254)
 
 // Инициализирующее значение CRC по стандарту MAVLink X.25
-inline const uint16_t X25_INIT_CRC = 0xFFFF;
+inline const uint16_t INIT_CRC_VALUE = 0xFFFF;
 
 // Типы сообщений в протоколе
-enum id_message : uint8_t {
-    id_msg_unknown,
-    id_msg_command_server, // команда для сервера
-    id_msg_command_client, // команда для клиента
-    id_msg_text_info
+enum id_message: uint8_t {
+    id_msg_unknown        = 0,
+    id_msg_command_server = 1, // команда для сервера
+    id_msg_command_client = 2, // команда для клиента
+    id_msg_text_info      = 3
 };
 
 /**
@@ -79,7 +79,7 @@ public:
         crcCoveredBuffer.append(data);
 
         // Считаем контрольную сумму (исключая MagicByte)
-        uint16_t crc = X25_INIT_CRC;
+        uint16_t crc = INIT_CRC_VALUE;
         for (int i = 0; i < crcCoveredBuffer.size(); ++i) {
             crc_accumulate(static_cast<uint8_t>(crcCoveredBuffer[i]), &crc);
         }

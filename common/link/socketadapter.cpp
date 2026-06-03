@@ -95,7 +95,7 @@ void SocketAdapter::readyRead() {
                 QByteArray fullPacket = tcpSocket->read(currentHeader.totalPacketSize);
 
                 // ВЫЧИСЛЕНИЕ CRC (Исключаем MagicByte [индекс 0] и последние 2 байта CRC из хвоста)
-                uint16_t calculatedCrc = server_protocol::X25_INIT_CRC;
+                uint16_t calculatedCrc = server_protocol::INIT_CRC_VALUE;
                 int bytesToCalculate = fullPacket.size() - 2;
 
                 for (int i = 1; i < bytesToCalculate; ++i) {

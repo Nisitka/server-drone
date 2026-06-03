@@ -9,7 +9,7 @@
 
 using namespace server_protocol;
 
-class TaskCreateMapMarker : public TaskDataBase
+class TaskCreateMapMarker: public TaskDataBase
 {
 public:
     TaskCreateMapMarker(ActionsClientsManager* clientsManager_,
@@ -44,8 +44,8 @@ private:
 
         // Используем стандартную C-локаль, чтобы double ВСЕГДА форматировался с точкой (например, 55.751234)
         QLocale cLocale(QLocale::C);
-        QString latStr = cLocale.toString(marker.lat, 'f', 7);
         QString lonStr = cLocale.toString(marker.lon, 'f', 7);
+        QString latStr = cLocale.toString(marker.lat, 'f', 7);
 
         // Защищаем базу данных, удваивая одиночные кавычки во всех пришедших из сети строках
         QString safeUuid = QString(marker.get_uuid()).replace("'", "''");
@@ -54,8 +54,8 @@ private:
         QString safeTime = QString(marker.lastUpdate.toString(data_map_marker::format_lastUpdate)).replace("'", "''");
 
         return "SELECT * FROM __CreateMarkerById("
-               + latStr + ","
                + lonStr + ","
+               + latStr + ","
                + "'" + safeName + "',"
                + "'" + safeInfo + "',"
                + "ARRAY[" + QString::number(marker.colorName.red()) + ","

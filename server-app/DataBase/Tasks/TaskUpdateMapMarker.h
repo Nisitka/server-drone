@@ -56,8 +56,8 @@ private:
 
         // Используем C-локаль (стандартную), чтобы double ВСЕГДА форматировался с точкой (например, 55.751234)
         QLocale cLocale(QLocale::C);
-        QString latStr = cLocale.toString(marker.lat, 'f', 7);
         QString lonStr = cLocale.toString(marker.lon, 'f', 7);
+        QString latStr = cLocale.toString(marker.lat, 'f', 7);
 
         // Экранируем все текстовые поля от инъекций и спецсимволов
         QString safeUuid = QString(marker.get_uuid()).replace("'", "''");
@@ -67,8 +67,8 @@ private:
 
         return "SELECT * FROM __ChangeInfoMarker('"
                + safeUuid + "',"
-               + latStr + ","
                + lonStr + ","
+               + latStr + ","
                + "'" + safeTime + "',"
                + "'" + safeName + "',"
                + "'" + safeInfo + "',"

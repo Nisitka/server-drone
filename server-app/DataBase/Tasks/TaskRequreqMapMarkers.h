@@ -29,8 +29,8 @@ public:
             QString uuid = query.value(0).toString();
 
             // Координаты
-            double lat = query.value(1).toDouble();
-            double lon = query.value(2).toDouble();
+            double lon = query.value(1).toDouble();
+            double lat = query.value(2).toDouble();
 
             // Имя метки и доп. информация
             QString name = query.value(3).toString();
@@ -67,7 +67,7 @@ public:
                                    id_type, id_subtype,
                                    name,
                                    color_name,
-                                   lat, lon,
+                                   lon, lat,
                                    info,
                                    lastUpdate);
 

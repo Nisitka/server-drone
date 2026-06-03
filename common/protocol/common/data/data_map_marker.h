@@ -21,7 +21,7 @@ public:
                     uint8_t subtype_obj_id_,
                     const QString& name_,
                     const QColor& color_name,
-                    double Lat, double Lon,
+                    double Lon, double Lat,
                     const QString& info_,
                     const QDateTime& lastUpdate_) :
         m_isEmpty(false),
@@ -29,7 +29,7 @@ public:
         uuid(uuid_),
         type_obj_id(type_obj_id_),
         subtype_obj_id(subtype_obj_id_),
-        lat(Lat), lon(Lon),
+        lon(Lon), lat(Lat),
         name(name_),
         colorName(color_name),
         info(info_)

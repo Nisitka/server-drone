@@ -56,7 +56,7 @@ void SocketAdapter::readyRead() {
     // в буфер сокета прилетело сразу несколько пакетов один за другим.
     while (true) {
 
-        // ШАГ 1: Если заголовок текущего пакета еще не прочитан (или сброшен)
+        // Если заголовок текущего пакета еще не прочитан (или сброшен)
         if (!currentHeader.isValid) {
 
             // Минимальный размер сетевого заголовка в нашем протоколе — 4 байта
@@ -71,7 +71,7 @@ void SocketAdapter::readyRead() {
 
                 // Если MagicByte не совпал — поток рассинхронизирован (атака или сбой связи)
                 if (!currentHeader.isValid) {
-                    qWarning() << "SocketAdapter: Критическая ошибка! Неверная сигнатура MagicByte. Соединение разорвано.";
+                    qWarning() << "SocketAdapter: Critical error! Invalid signature MagicByte. The connection is broken.";
                     disconnect();
                     return;
                 }
@@ -85,17 +85,37 @@ void SocketAdapter::readyRead() {
             }
         }
 
-        // ШАГ 2: Если заголовок успешно распознан, проверяем наличие всего тела пакета
+        // Если заголовок успешно распознан, проверяем наличие всего тела пакета
         if (currentHeader.isValid) {
 
-            // Общий размер полного пакета (Заголовок 4 байта + Полезная нагрузка bodySize)
-            qint64 totalPacketSize = 4 + currentHeader.bodySize;
-
             // Если весь пакет целиком гарантированно загружен в буфер сокета
-            if (tcpSocket->bytesAvailable() >= totalPacketSize) {
+            if (tcpSocket->bytesAvailable() >= currentHeader.totalPacketSize) {
 
                 // Извлекаем (read) весь пакет, физически удаляя его из буфера сокета
-                QByteArray fullPacket = tcpSocket->read(totalPacketSize);
+                QByteArray fullPacket = tcpSocket->read(currentHeader.totalPacketSize);
+
+                // ВЫЧИСЛЕНИЕ CRC (Исключаем MagicByte [индекс 0] и последние 2 байта CRC из хвоста)
+                uint16_t calculatedCrc = server_protocol::X25_INIT_CRC;
+                int bytesToCalculate = fullPacket.size() - 2;
+
+                for (int i = 1; i < bytesToCalculate; ++i) {
+                    server_protocol::crc_accumulate(static_cast<uint8_t>(fullPacket[i]), &calculatedCrc);
+                }
+
+                // Читаем присланную CRC из хвоста пакета
+                uint16_t receivedCrc;
+                std::memcpy(&receivedCrc, fullPacket.constData() + bytesToCalculate, sizeof(uint16_t));
+                receivedCrc = qFromLittleEndian(receivedCrc);
+
+                // Проверка целостности
+                if (calculatedCrc != receivedCrc) {
+                    qWarning() << "SocketAdapter: Error CRC! The package is damaged. Expected: 0x" << calculatedCrc
+                               << "Received: 0x" << receivedCrc;
+
+                    currentHeader = server_protocol::MessageHeader();
+                    disconnect();
+                    return;
+                }
 
                 // Отсекаем первые 4 байта сетевого заголовка, оставляя только чистые прикладные данные
                 currentMessage = fullPacket.mid(4);
@@ -126,12 +146,12 @@ void SocketAdapter::readyRead() {
  */
 void SocketAdapter::sendByteArray(const QByteArray& data) {
     if (!tcpSocket) {
-        qWarning() << "SocketAdapter::sendByteArray: Указатель на сокет равен nullptr!";
+        qWarning() << "SocketAdapter::sendByteArray: The pointer to the socket is nullptr!";
         return;
     }
 
     if (!tcpSocket->isOpen() || !tcpSocket->isWritable()) {
-        qWarning() << "SocketAdapter::sendByteArray: Сокет закрыт или недоступен для записи!";
+        qWarning() << "SocketAdapter::sendByteArray: The socket is closed or unavailable for writing!";
         return;
     }
 
@@ -140,9 +160,9 @@ void SocketAdapter::sendByteArray(const QByteArray& data) {
     qint64 bytesWritten = tcpSocket->write(data);
 
     if (bytesWritten == -1) {
-        qCritical() << "SocketAdapter::sendByteArray: Ошибка при записи данных в сокет:" << tcpSocket->errorString();
+        qCritical() << "SocketAdapter::sendByteArray: Error when writing data to the socket:" << tcpSocket->errorString();
     } else {
-        qDebug() << "SocketAdapter: Успешно отправлен пакет размером" << bytesWritten << "байт.";
+        qDebug() << "SocketAdapter: Successfully send packet size to" << bytesWritten << "bytes.";
     }
 }
 
@@ -151,7 +171,7 @@ void SocketAdapter::sendByteArray(const QByteArray& data) {
  */
 void SocketAdapter::disconnect() {
     if (tcpSocket && tcpSocket->isOpen()) {
-        qDebug() << "SocketAdapter: Инициировано закрытие соединения сокета.";
+        qDebug() << "SocketAdapter: The socket connection has been closed.";
         tcpSocket->close();
     }
 }

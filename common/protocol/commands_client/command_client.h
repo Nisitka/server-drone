@@ -11,17 +11,23 @@ namespace server_protocol {
 
 // Какие есть команды для клиента
 enum id_command_client : uint8_t {
-    id_command_client_unknown,
+    id_command_client_unknown                       = 0,
 
-    /// Команды, связанные с пользователями
-    id_command_client_user_result_auth,
+    /// ------- Команды, связанные с пользователями --------
+    id_command_client_user_result_auth              = 1,
+    /// ----------------------------------------------------
 
-    /// Команды, связанные с картой
-    id_command_client_map_object_created,
-    id_command_client_map_object_update,
-    id_command_client_map_object_removed,
-    id_command_client_map_result_requreq_markers,
-    id_command_client_map_requreq_data_markers
+    /// ------------ Команды, связанные с картой -----------
+    id_command_client_map_object_created            = 30,
+
+    id_command_client_map_object_update             = 32,
+    id_command_client_map_result_changed_object     = 33,
+
+    id_command_client_map_object_removed            = 34,
+
+    id_command_client_map_requreq_data_markers      = 36,
+    id_command_client_map_result_requreq_markers    = 37
+    /// ----------------------------------------------------
 };
 
 /**

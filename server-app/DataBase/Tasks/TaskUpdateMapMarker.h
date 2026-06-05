@@ -29,21 +29,31 @@ public:
         switch (code) {
         case 0: {
             qDebug() << "TaskUpdateMapMarker: Успешно обновлено в БД. Рассылаем остальным.";
-            command_client_map_object_update cmd_update_marker(data_marker);
+            result_command msg_res_command(id_command_server_map_object_update,
+                                           successfully);
+            emit clientsManager->sendByteArray(login, msg_res_command.toByteArray());
 
             // Уведомляем других об изменениях, кроме инициатора
+            command_client_map_object_update cmd_update_marker(data_marker);
             emit clientsManager->sendByteArrayAllUsersExcept(QStringList{login},
                                                              cmd_update_marker.toByteArray());
             break;
         }
-        case 1:
-            qDebug() << "TaskUpdateMapMarker: Ошибка изменения данных метки в БД (code 1)";
-            /// Здесь можно сформировать command_client_map_result_requreq_markers с ошибкой и отправить лично автору
-            break;
+        case 1:{
+            qDebug() << "TaskUpdateMapMarker: Error changing tag data in the database (code 1)";
+            result_command msg_res_command(id_command_server_map_object_update,
+                                           invalid,
+                                           command_server_map_object_update::invalid_date_or_time_changed);
 
-        default:
-            qDebug() << "TaskUpdateMapMarker: Получен неизвестный код ответа БД:" << code;
-            break;
+            emit clientsManager->sendByteArray(login, msg_res_command.toByteArray());
+            break;}
+
+        default:{
+            qDebug() << "TaskUpdateMapMarker: Unknown response code received from the database::" << code;
+            result_command msg_res_command(id_command_server_map_object_update,
+                                           invalid);
+            emit clientsManager->sendByteArray(login, msg_res_command.toByteArray());
+            break;}
         }
 
         return true;

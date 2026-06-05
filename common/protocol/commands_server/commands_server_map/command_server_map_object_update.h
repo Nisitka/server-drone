@@ -13,6 +13,11 @@ namespace server_protocol {
 class command_server_map_object_update: public protocol_message,
                                         public command {
 public:
+
+    enum id_info_result: uint8_t {
+        invalid_date_or_time_changed = 1
+    };
+
     // -------------------------------------------------------------
     // Сценарий 1: ПРИЕМ ИЗ СЕТИ (Конструктор десериализации)
     // -------------------------------------------------------------

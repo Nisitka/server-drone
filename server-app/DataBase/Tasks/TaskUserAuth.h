@@ -31,7 +31,7 @@ public:
 
         switch (code) {
         case 0:
-            qDebug() << login << "- успешно авторизирован в БД! Передаем сокет в ClientsManager.";
+            qDebug() << login << "- successfully logged into the database! Passing the socket to the ClientsManager.";
 
             // Инициируем добавление. ClientsManager сам отправит статус successfully в initClient
             emit clientsManager->addClient(login, socket);
@@ -53,7 +53,7 @@ public:
             break;
 
         default:
-            qDebug() << "TaskUserAuth: неизвестный код ответа базы данных:" << code;
+            qDebug() << "TaskUserAuth: unknown database response code:" << code;
             sendAuthResult(command_client_user_result_auth::invalid);
             return false;
         }

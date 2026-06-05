@@ -76,7 +76,7 @@ void SocketAdapter::readyRead() {
                     return;
                 }
 
-                qDebug() << "SocketAdapter: Заголовок успешно распознан. ID:"
+                qDebug() << "SocketAdapter: The header was successfully recognized. ID:"
                          << currentHeader.msgId << "| Ожидаемый размер тела:" << currentHeader.bodySize << "байт";
             }
             else {
@@ -128,7 +128,7 @@ void SocketAdapter::readyRead() {
                 currentHeader = server_protocol::MessageHeader();
 
                 // Генерируем сигнал message(). Подключенный к нему менеджер
-                // сразу же заберет данные через геттерыgetLastMsgId() и getCurrentMessage()
+                // сразу же заберет данные через геттеры getLastMsgId() и getCurrentMessage()
                 emit message();
             }
             else {

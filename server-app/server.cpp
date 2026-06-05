@@ -107,7 +107,7 @@ void Server::acceptTryAuthMessage()
     qDebug() << "size AuthMessage body -" << bodyData.size();
 
     if (bodyData.isEmpty()) {
-        qDebug() << "Server: Попытка обработать пустое тело сообщения!";
+        qDebug() << "Server: An attempt to process an empty message body!";
         return;
     }
 
@@ -115,7 +115,7 @@ void Server::acceptTryAuthMessage()
     std::unique_ptr<command> incomingCmd = ServerCommandFactory::createCommand(bodyData);
 
     if (!incomingCmd) {
-        qWarning() << "Server: Фабрика не смогла распарсить входящие байты авторизации!";
+        qWarning() << "Server: The factory could not parse the incoming authorization bytes!";
         return;
     }
 

@@ -45,7 +45,7 @@ ActionsClientsManager* ClientsManager::Actions() const {
 void ClientsManager::initClient(const QString& uuidClient, ISocketAdapter* socket)
 {
     if (clients.contains(uuidClient)) {
-        qDebug() << "ClientsManager: попытка добавить уже авторизованного клиента -" << uuidClient;
+        qDebug() << "ClientsManager: an attempt to add an already authorized client -" << uuidClient;
         return;
     }
 
@@ -120,24 +120,34 @@ void ClientsManager::acceptMessageFromSocket()
     const QString login = socketToLogin(client);
 
     if (login.isEmpty()) {
-        qDebug() << "ClientsManager: получен пакет от неавторизованного или неизвестного сокета!";
+        qDebug() << "ClientsManager: A packet has been received from an unauthorized or unknown socket!";
         return;
     }
 
     // Проверяем тип сообщения верхнего уровня через геттер адаптера
     server_protocol::id_message msgType = client->getLastMsgId();
-    if (msgType != id_msg_command_server) {
-        qDebug() << "ClientsManager: тип сообщения не является серверной командой:" << msgType;
+    if (msgType == server_protocol::id_msg_unknown) {
+        qDebug() << "ClientsManager: accept id_msg_unknown!";
         return;
     }
 
     // Забираем чистое тело сообщения (уже без 4 байт заголовка протокола)
     const QByteArray& bodyData = client->getCurrentMessage();
-
     if (!bodyData.isEmpty())
-        processingMessage(bodyData, login);
-    else
-        qDebug() << "ClientsManager: получено пустое тело команды!";
+
+        /// В зависимости от типа сообщения
+        switch (msgType) {
+        case server_protocol::id_msg_command_server:
+            processingMsg_command(bodyData, login);
+            break;
+        default:
+            break;
+        }
+
+    else{
+        qDebug() << "ClientsManager: An empty command body has been received!";
+        return;
+    }
 }
 
 QString ClientsManager::socketToLogin(ISocketAdapter* socket) const
@@ -150,46 +160,51 @@ QString ClientsManager::socketToLogin(ISocketAdapter* socket) const
     return QString();
 }
 
-void ClientsManager::processingMessage(const QByteArray& bodyData, const QString& login_client)
+void ClientsManager::processingMsg_command(const QByteArray& bodyData, const QString& login_client)
 {
     // Задействуем нашу полиморфную фабрику команд для автоматического разбора
     std::unique_ptr<command> incomingCmd = ServerCommandFactory::createCommand(bodyData);
 
-    if (!incomingCmd) {
-        qWarning() << "ClientsManager: Фабрика не смогла распознать или распарсить команду!";
+    /// Если такая команда есть команда
+    if (incomingCmd) {
+
+        uint8_t id_command = incomingCmd->id_command();
+        qDebug() << "ClientsManager: processing the id command =" << id_command << "for client" << login_client;
+
+        switch (id_command) {
+        case id_command_server_map_requreq_objects: {
+            taskQueue->enqueue(new TaskRequreqMapMarkers(Actions(), login_client));
+            break;
+        }
+        case id_command_server_map_object_update: {
+            // Безопасно приводим указатель к конкретному типу команды, чтобы передать его в задачу БД
+            auto* cmd = static_cast<command_server_map_object_update*>(incomingCmd.get());
+            // Передаем копию объекта команды (или ссылку, если Task принимает её так)
+            taskQueue->enqueue(new TaskUpdateMapMarker(Actions(), login_client, *cmd));
+            break;
+        }
+        case id_command_server_map_object_create: {
+            auto* cmd = static_cast<command_server_map_object_create*>(incomingCmd.get());
+            taskQueue->enqueue(new TaskCreateMapMarker(Actions(), login_client, *cmd));
+            break;
+        }
+        case id_command_server_map_object_remove: {
+            auto* cmd = static_cast<command_server_map_remove_object*>(incomingCmd.get());
+            taskQueue->enqueue(new TaskRemoveMapMarker(Actions(), login_client, *cmd));
+            break;
+        }
+        default:
+            qDebug() << "ClientsManager: For command id =" << id_command << "there is no task handler- data base";
+            break;
+        }
+        // Память объекта incomingCmd автоматически очистится здесь при выходе из области видимости
+
+    }else{
+        qWarning() << "ClientsManager: The factory could not recognize or parse the command!";
         return;
     }
 
-    uint8_t id_command = incomingCmd->id_command();
-    qDebug() << "ClientsManager: обработка команды id =" << id_command << "для клиента" << login_client;
 
-    switch (id_command) {
-    case id_command_server_map_requreq_objects: {
-        taskQueue->enqueue(new TaskRequreqMapMarkers(Actions(), login_client));
-        break;
-    }
-    case id_command_server_map_object_update: {
-        // Безопасно приводим указатель к конкретному типу команды, чтобы передать его в задачу БД
-        auto* cmd = static_cast<command_server_map_object_update*>(incomingCmd.get());
-        // Передаем копию объекта команды (или ссылку, если Task принимает её так)
-        taskQueue->enqueue(new TaskUpdateMapMarker(Actions(), login_client, *cmd));
-        break;
-    }
-    case id_command_server_map_object_create: {
-        auto* cmd = static_cast<command_server_map_object_create*>(incomingCmd.get());
-        taskQueue->enqueue(new TaskCreateMapMarker(Actions(), login_client, *cmd));
-        break;
-    }
-    case id_command_server_map_object_remove: {
-        auto* cmd = static_cast<command_server_map_remove_object*>(incomingCmd.get());
-        taskQueue->enqueue(new TaskRemoveMapMarker(Actions(), login_client, *cmd));
-        break;
-    }
-    default:
-        qDebug() << "ClientsManager: Для команды id =" << id_command << "нет обработчика задач БД.";
-        break;
-    }
-    // Память объекта incomingCmd автоматически очистится здесь при выходе из области видимости
 }
 
 void ClientsManager::disconnectClient(const QString& uuidClient)

@@ -9,25 +9,36 @@
 
 namespace server_protocol {
 
-// Значение - идентификатор протокола (Magic Byte)
-inline const uint8_t MagicByte = 0xEF; // 239 в dec (или 0xFE = 254)
+/// Значение - идентификатор протокола
+inline const uint8_t MagicByte = 0xEF; // 239 в десятичной
 
-// Инициализирующее значение CRC по стандарту MAVLink X.25
+// Инициализирующее значение CRC по стандарту X.25
 inline const uint16_t INIT_CRC_VALUE = 0xFFFF;
+
+/// Универсальные коды возврата
+enum results_requreq: uint8_t {
+    successfully = 0,
+    invalid      = 1
+};
 
 // Типы сообщений в протоколе
 enum id_message: uint8_t {
-    id_msg_unknown        = 0,
+    id_msg_unknown        = 255,
+
+    id_msg_result         = 0,
+
     id_msg_command_server = 1, // команда для сервера
     id_msg_command_client = 2, // команда для клиента
-    id_msg_text_info      = 3
+    id_msg_result_command = 3, /// результат выполнения любой команды
+
+    id_msg_text_info      = 10
 };
 
 /**
- * @brief Побайтовое накопление контрольной суммы MAVLink (X.25 CRC-16)
+ * @brief Побайтовое накопление контрольной суммы (X.25 CRC-16)
  */
 inline void crc_accumulate(uint8_t data, uint16_t *crcAccum) {
-    // мы применяем операцию XOR (Исключающее ИЛИ) между новым байтом данных data и этим младшим байтом CRC. Результат временно сохраняется в 8-битную переменную tmp
+    // мы применяем операцию XOR (исключающее ИЛИ) между новым байтом данных data и этим младшим байтом CRC. Результат временно сохраняется в 8-битную переменную tmp
     uint8_t tmp = data ^ (uint8_t)(*crcAccum & 0xFF); // мы берем текущую 16-битную контрольную сумму и «отрезаем» от нее только младший (правый) байт.
     tmp ^= (tmp << 4); // Полубайтовое «размножение» (Вычисление промежуточного полинома)
     *crcAccum = (*crcAccum >> 8) ^ (tmp << 8) ^ (tmp << 3) ^ (tmp >> 4);
@@ -47,7 +58,7 @@ public:
     // Виртуальный деструктор ОБЯЗАТЕЛЕН для базовых классов
     virtual ~protocol_message() = default;
 
-    protocol_message(id_message id_msg_) : id_msg(id_msg_) {}
+    protocol_message(id_message id_msg_): id_msg(id_msg_) {}
 
     uint8_t get_msg_id() const { return id_msg; }
 

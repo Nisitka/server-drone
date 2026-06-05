@@ -53,8 +53,8 @@ private:
     QString socketToLogin(ISocketAdapter*) const;
 
     //
-    void processingMessage(const QByteArray& msg,
-                           const QString& login_client);
+    void processingMsg_command(const QByteArray& msg,
+                               const QString& login_client);
 
     // Инициировать отключение клиента от сервера
     void disconnectClient(const QString& uuidClient);

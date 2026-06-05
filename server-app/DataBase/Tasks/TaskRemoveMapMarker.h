@@ -32,9 +32,16 @@ public:
     {}
 
     bool processRequestResult(QSqlQuery& query) override final {
-        // Проверяем, вернула ли база данных успешный статус удаления (если ваша функция __DeleteObject возвращает код)
-        // В вашем исходном коде проверки query.next() не было, но для надежности её стоит делать, если функция что-то возвращает:
+        // Проверяем, вернула ли база данных успешный статус удаления
         // if (query.next() && query.value(0).toInt() != 0) return false;
+        // result_command msg_res_command(id_command_server_map_object_remove,
+        //                                invalid);
+        //emit clientsManager->sendByteArray(login, msg_res_command.toByteArray());
+
+        /// Сообщаем автору команды что метка успешно удалена
+        result_command msg_res_command(id_command_server_map_object_remove,
+                                       successfully);
+        emit clientsManager->sendByteArray(login, msg_res_command.toByteArray());
 
         /// Уведомляются все клиенты о том, что метка удалена
         command_client_map_object_removed cmd_obj_removed(uuid_marker);
@@ -43,7 +50,8 @@ public:
         emit clientsManager->sendByteArrayAllUsersExcept(QStringList{login},
                                                          cmd_obj_removed.toByteArray());
 
-        qDebug() << "TaskRemoveMapMarker: Объект" << uuid_marker << "успешно удален. Рассылка отправлена.";
+        qDebug() << "TaskRemoveMapMarker: object" << uuid_marker << "successfully deleted. The newsletter has been sent.";
+
         return true;
     }
 

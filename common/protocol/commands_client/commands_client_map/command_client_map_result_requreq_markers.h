@@ -8,19 +8,15 @@
 
 namespace server_protocol {
 
-class command_client_map_result_requreq_markers : public protocol_message,
-                                                  public command {
+class command_client_map_result_requreq_markers: public protocol_message,
+                                                 public command {
 public:
-    enum results_requreq : uint8_t {
-        successfully,
-        invalid
-    };
 
     // -------------------------------------------------------------
     // Сценарий 1: ПРИЕМ НА КЛИЕНТЕ (Конструктор десериализации)
     // -------------------------------------------------------------
     // Сюда передается чистый bodyData (уже без 4 байт сетевого заголовка протокола)
-    command_client_map_result_requreq_markers(const QByteArray& bodyData) :
+    command_client_map_result_requreq_markers(const QByteArray& bodyData):
         protocol_message(id_msg_command_client),
         command(id_command_client_map_result_requreq_markers),
         result(invalid),
@@ -29,9 +25,8 @@ public:
         // Сохраняем пришедшие байты в базовый класс
         this->data = bodyData;
 
-        int offset = 0;
-
         // Пропускаем id_cmd (1 байт)
+        int offset = 0;
         if (offset + sizeof(uint8_t) <= static_cast<size_t>(data.size())) {
             offset += sizeof(uint8_t);
         }
@@ -41,7 +36,7 @@ public:
             result = static_cast<results_requreq>(data[offset]);
             offset += sizeof(uint8_t);
         } else {
-            qWarning() << "command_client_map_result_requreq_markers: Недостаточно байт для чтения поля result!";
+            qWarning() << "command_client_map_result_requreq_markers: There are not enough bytes to read the result field!";
             return;
         }
 
@@ -50,9 +45,8 @@ public:
             uint32_t rawCount;
             std::memcpy(&rawCount, data.constData() + offset, sizeof(uint32_t));
             count_markers = qFromBigEndian(rawCount);
-            offset += sizeof(uint32_t);
         } else {
-            qWarning() << "command_client_map_result_requreq_markers: Недостаточно байт для чтения поля count_markers!";
+            qWarning() << "command_client_map_result_requreq_markers: There are not enough bytes to read the count_markers field!";
         }
     }
 
@@ -65,8 +59,6 @@ public:
         result(result_),
         count_markers(count_markers_)
     {
-        // Формируем внутреннее тело (data). Внешний заголовок базовый класс добавит сам!
-
         // Сначала добавляем идентификатор конкретной команды (1 байт)
         data.append(static_cast<char>(id_cmd));
 
@@ -78,21 +70,18 @@ public:
         data.append(reinterpret_cast<const char*>(&networkCount), sizeof(networkCount));
     }
 
-    // Метод toByteArray() удален. Сборка происходит автоматически в базовом классе.
-
     // Возвращаем строгое перечисление вместо uint8_t для удобства в switch/case
     results_requreq getResult() const {
         return result;
     }
 
     uint32_t getCountMarkers() const {
-        // Возвращаем uint32_t для поддержки больших списков
         return count_markers;
     }
 
 private:
     results_requreq result;
-    uint32_t count_markers; // Заменили на uint32_t для кроссплатформенности и масштабируемости
+    uint32_t count_markers;
 };
 
 }

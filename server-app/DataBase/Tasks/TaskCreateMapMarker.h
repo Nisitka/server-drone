@@ -27,13 +27,17 @@ public:
         // Если __CreateMarkerById возвращает код статуса (например, 0 - успех, 1 - ошибка),
         // здесь можно добавить проверку query.next()
 
-        command_client_map_object_created cmd_obj_created(data_marker);
+        // Сообщаем автору команды что она выполнена успешно
+        result_command msg_res_command(id_command_server_map_object_create,
+                                       successfully);
+        emit clientsManager->sendByteArray(login, msg_res_command.toByteArray());
 
         // Уведомляем другие клиенты об этом, исключая автора
+        command_client_map_object_created cmd_obj_created(data_marker);
         emit clientsManager->sendByteArrayAllUsersExcept(QStringList{login},
                                                          cmd_obj_created.toByteArray());
 
-        qDebug() << "TaskCreateMapMarker: Объект успешно создан в БД. Рассылка выполнена.";
+        qDebug() << "TaskCreateMapMarker: The object was successfully created in the database. The mailing list is completed.";
         return true;
     }
 

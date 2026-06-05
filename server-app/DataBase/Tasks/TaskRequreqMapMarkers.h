@@ -23,7 +23,7 @@ public:
     {
         QVector<data_map_marker> markersList;
 
-        // 1. Извлекаем данные из БД во временный список
+        // Извлекаем данные из БД во временный список
         while (query.next())
         {
             QString uuid = query.value(0).toString();
@@ -80,7 +80,7 @@ public:
         // Сообщаем клиенту о начале и количестве отправляемых меток
         // (Мы изменили тип count_markers на uint32_t в прошлых шагах для масштабируемости)
         command_client_map_result_requreq_markers cmd_result(
-            command_client_map_result_requreq_markers::successfully,
+            successfully,
             totalMarkers
             );
         emit clientsManager->sendByteArray(login, cmd_result.toByteArray());

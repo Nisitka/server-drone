@@ -8,13 +8,13 @@
 namespace server_protocol {
 
 // Авторизоваться на сервере: логин (QString), пароль (QString)
-class command_server_user_auth : public protocol_message, public command {
+class command_server_user_auth: public protocol_message, public command {
 public:
     // -------------------------------------------------------------
     // Сценарий 1: ПРИЕМ ИЗ СЕТИ (Конструктор десериализации)
     // -------------------------------------------------------------
     // Сюда должен передаваться ЧИСТЫЙ bodyData (уже без заголовка протокола 4 байт)
-    command_server_user_auth(const QByteArray& bodyData) :
+    command_server_user_auth(const QByteArray& bodyData):
         protocol_message(id_msg_command_server),
         command(id_command_server_user_auth)
     {

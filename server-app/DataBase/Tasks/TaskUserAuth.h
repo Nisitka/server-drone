@@ -13,7 +13,7 @@ public:
     TaskUserAuth(ActionsClientsManager* clientsManager_, ISocketAdapter* socket_,
                  const QString& login_, const QString& pass_) :
         // Экранируем кавычки для защиты от SQL-инъекций
-        TaskDataBase("SELECT __UserAuth('" + QString(login_).replace("'", "''") + "','"
+        TaskDataBase("SELECT status_code, user_id FROM __UserAuth('" + QString(login_).replace("'", "''") + "','"
                      + QString(pass_).replace("'", "''") + "')"),
         clientsManager(clientsManager_),
         login(login_),
@@ -30,12 +30,14 @@ public:
         int code = query.value(0).toInt();
 
         switch (code) {
-        case 0:
-            qDebug() << login << "- successfully logged into the database! Passing the socket to the ClientsManager.";
+        case 0:{
+            /// В случае успеха узнаем uuid пользователя
+            const QString uuid_user = query.value(1).toString();
+            qDebug() << uuid_user << login << "- successfully logged into the database! Passing the socket to the ClientsManager.";
 
             // Инициируем добавление. ClientsManager сам отправит статус successfully в initClient
-            emit clientsManager->addClient(login, socket);
-            break;
+            emit clientsManager->addClient(uuid_user, socket);
+            break;}
 
         case 1:
             qDebug() << login << "- error login or password!";
@@ -62,7 +64,7 @@ public:
     }
 
 private:
-    // Используется только для отправки ошибочных статусов
+    /// Используется только для отправки ошибочных статусов
     void sendAuthResult(command_client_user_result_auth::results_auth status) {
         command_client_user_result_auth cmd(status);
         emit socket->trSendByteArray(cmd.toByteArray());

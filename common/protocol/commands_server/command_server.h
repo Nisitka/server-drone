@@ -13,7 +13,8 @@ enum id_command_server: uint8_t{
     id_command_server_unknown = 0,
 
     /// Команды, связанные с пользователями
-    id_command_server_user_auth = 10,
+    id_command_server_user_auth               = 10,
+    id_command_server_user_requreq_info_users = 11,
 
     /// Команды, связанные с картой
     id_command_server_map_object_create        = 101,

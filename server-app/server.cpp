@@ -59,6 +59,9 @@ Server::Server(QObject *parent) :
             thread->start();
 
             sqlExecuters.append(executer);
+
+            //
+            QThread::msleep(100);
         }
 
         if (run())

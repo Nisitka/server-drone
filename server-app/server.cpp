@@ -80,7 +80,7 @@ void Server::incomingConnection(qintptr socketDescriptor)
 
     // Добавляем в список пытающихся ломиться в систему.
     // Предполагается, что ваш SocketAdapter принимает QTcpSocket* в конструкторе.
-    ISocketAdapter* socketAdapter = new SocketAdapter(socket);
+    ISocketAdapter* socketAdapter = new ServerSocketAdapter(socket);
     notAuthSockets.append(socketAdapter);
 
     /// Взаимодействие неавторизованного клиента
@@ -161,7 +161,7 @@ void Server::removeSocketFromNotAuthSockets(ISocketAdapter* client)
     disconnect(client, &ISocketAdapter::message,
                this,   &Server::acceptTryAuthMessage);
     disconnect(client, &ISocketAdapter::disconnected,
-               this,          &Server::removeNotAuthSocket);
+               this,   &Server::removeNotAuthSocket);
 
     notAuthSockets.removeAll(client);
 }

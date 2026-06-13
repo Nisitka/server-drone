@@ -7,7 +7,7 @@
 
 // Непотокобезопасная обертка для QTcpSocket
 // при испускании сигнала message() - ожидает обработку в том же потоке
-class ISocketAdapter : public QObject {
+class ISocketAdapter: public QObject {
     Q_OBJECT
 
 signals:
@@ -17,12 +17,7 @@ signals:
     void trSendByteArray(const QByteArray& data);
 
 public:
-    explicit ISocketAdapter() : QObject(),
-        lastMsgId(server_protocol::id_msg_unknown) {
-
-        connect(this, &ISocketAdapter::trSendByteArray,
-                this, &ISocketAdapter::sendByteArray);
-    }
+    explicit ISocketAdapter();
     virtual ~ISocketAdapter() = default;
 
     // Тело последнего сообщения
@@ -36,6 +31,7 @@ public:
     }
 
 protected slots:
+    // Отправка данных
     virtual void sendByteArray(const QByteArray& data) = 0;
 
 protected:

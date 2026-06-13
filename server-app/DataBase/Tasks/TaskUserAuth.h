@@ -8,7 +8,7 @@
 
 using namespace server_protocol;
 
-class TaskUserAuth : public TaskDataBase {
+class TaskUserAuth: public TaskDataBase {
 public:
     TaskUserAuth(ActionsClientsManager* clientsManager_, ISocketAdapter* socket_,
                  const QString& login_, const QString& pass_) :

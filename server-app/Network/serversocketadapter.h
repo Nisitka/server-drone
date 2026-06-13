@@ -3,10 +3,20 @@
 
 # include "../../common/link/socketadapter.h"
 
-class ServerSocketAdapter : public SocketAdapter {
+#include <QTimer>
+
+class ServerSocketAdapter: public SocketAdapter {
     Q_OBJECT
 public:
-  explicit ServerSocketAdapter(QTcpSocket* pSock);
+    explicit ServerSocketAdapter(QTcpSocket* pSock);
+
+private slots:
+    // Отключить сокет из-за бездействия
+    void shutdownDueInactivity();
+
+private:
+    // Таймер, который определяет бездействие со стороны клиента
+    QTimer* inactivityTimer;
 };
 
 #endif // SERVERSOCKETADAPTER_H

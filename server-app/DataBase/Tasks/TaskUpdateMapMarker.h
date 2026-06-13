@@ -28,7 +28,7 @@ public:
         int code = query.value(0).toInt();
         switch (code) {
         case 0: {
-            qDebug() << "TaskUpdateMapMarker: Успешно обновлено в БД. Рассылаем остальным.";
+            qDebug() << "TaskUpdateMapMarker: Successfully updated in the database. We're sending it to the others.";
             result_command msg_res_command(id_command_server_map_object_update,
                                            successfully);
             emit clientsManager->sendByteArray(login, msg_res_command.toByteArray());

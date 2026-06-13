@@ -10,6 +10,8 @@
 #include "../protocol/protocol_message.h"
 #include "isocketadapter.h"
 
+#include <QTimer>
+
 class SocketAdapter: public ISocketAdapter {
     Q_OBJECT
 
@@ -34,6 +36,12 @@ protected slots:
 protected:
     QTcpSocket* tcpSocket;
 
+private slots:
+    void sendHeartbeat();
+
+private:
+    // Для сердцебиения
+    QTimer* timerHeartbeat;
 };
 
 #endif // SOCKETADAPTER_H

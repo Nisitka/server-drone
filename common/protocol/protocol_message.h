@@ -25,7 +25,7 @@ enum results_requreq: uint8_t {
 enum id_message: uint8_t {
     id_msg_unknown        = 255,
 
-    id_msg_result         = 0,
+    id_msg_heartbeat      = 0, /// Сердцебиение
 
     id_msg_command_server = 1, // команда для сервера
     id_msg_command_client = 2, // команда для клиента
@@ -58,7 +58,9 @@ public:
     // Виртуальный деструктор ОБЯЗАТЕЛЕН для базовых классов
     virtual ~protocol_message() = default;
 
-    protocol_message(id_message id_msg_): id_msg(id_msg_) {}
+    protocol_message(id_message id_msg_): id_msg(id_msg_) {
+        data.clear();
+    }
 
     uint8_t get_msg_id() const { return id_msg; }
 

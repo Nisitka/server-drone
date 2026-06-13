@@ -4,10 +4,9 @@
 #include <QDebug>
 #include <QtEndian>
 
-namespace server_protocol {
-// Если методы parseHeader еще не были вынесены в cpp,
-// компилятор найдет их через заголовочный файл protocol_message.h
-}
+#include "../../common/protocol/heartbeat.h"
+
+using namespace server_protocol;
 
 /**
  * @brief Конструктор адаптера сокета
@@ -37,6 +36,20 @@ SocketAdapter::SocketAdapter(QTcpSocket* pSock) :
     // Сбрасываем структуру заголовка и внутренний буфер сообщения
     currentHeader = server_protocol::MessageHeader();
     currentMessage.clear();
+
+    /// Все сокеты отправляют седцебиение по умолчанию
+    timerHeartbeat = new QTimer(this);
+    connect(timerHeartbeat, &QTimer::timeout,
+            this,           &SocketAdapter::sendHeartbeat);
+    timerHeartbeat->start(server_protocol::HEARTBEAT_INTERVAL);
+}
+
+void SocketAdapter::sendHeartbeat(){
+
+    qDebug() << "SocketAdapter: send heartbeat";
+
+    server_protocol::heartbeat msg_heartbeat;
+    emit this->trSendByteArray(msg_heartbeat.toByteArray());
 }
 
 /**
@@ -175,5 +188,4 @@ void SocketAdapter::disconnect() {
         tcpSocket->close();
     }
 }
-
 

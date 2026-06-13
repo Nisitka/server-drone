@@ -137,6 +137,10 @@ void ClientsManager::acceptMessageFromSocket()
 
         /// В зависимости от типа сообщения
         switch (msgType) {
+        case server_protocol::id_msg_heartbeat:
+            // Никак не обрабатываем
+            qDebug() << "ClientsManager: acceptMessageFromSocket() - accept id_msg_heartbea";
+            break;
         case server_protocol::id_msg_command_server:
             processingMsg_command(bodyData, login);
             break;

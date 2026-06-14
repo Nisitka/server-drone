@@ -44,7 +44,7 @@ ActionsClientsManager* ClientsManager::Actions() const {
 void ClientsManager::initClient(const QString& uuidClient, const QString& nickname, ISocketAdapter* socket)
 {
     if (clients.contains(uuidClient)) {
-        qDebug() << "ClientsManager: an attempt to add an already authorized client -" << uuidClient;
+        qDebug() << "ClientsManager: an attempt to add an already authorized client -" << uuidClient << nickname;
         return;
     }
 

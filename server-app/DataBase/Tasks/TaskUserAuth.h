@@ -13,7 +13,7 @@ public:
     TaskUserAuth(ActionsClientsManager* clientsManager_, ISocketAdapter* socket_,
                  const QString& login_, const QString& pass_) :
         // Экранируем кавычки для защиты от SQL-инъекций
-        TaskDataBase("SELECT status_code, user_id FROM __UserAuth('" + QString(login_).replace("'", "''") + "','"
+        TaskDataBase("SELECT * FROM __UserAuth('" + QString(login_).replace("'", "''") + "','"
                      + QString(pass_).replace("'", "''") + "')"),
         clientsManager(clientsManager_),
         login(login_),

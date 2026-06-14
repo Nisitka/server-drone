@@ -10,6 +10,7 @@ class ActionsClientsManager: public QObject
 signals:
     // Добавить клиента
     void addClient(const QString& login,
+                   const QString& nickname,
                    ISocketAdapter* clientSock);
 
     // Отправить сообщение клиенту

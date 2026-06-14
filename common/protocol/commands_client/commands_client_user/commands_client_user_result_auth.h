@@ -24,7 +24,8 @@ public:
     command_client_user_result_auth(const QByteArray& bodyData) :
         protocol_message(id_msg_command_client),
         command(id_command_client_user_result_auth),
-        value(invalid) // Дефолтное значение на случай повреждения пакета
+        value(invalid), // Дефолтное значение на случай повреждения пакета
+        nickname("")
     {
         // Сохраняем пришедшие байты в базовый класс
         this->data = bodyData;
@@ -39,18 +40,23 @@ public:
         // Безопасно считываем 1 байт результата (value) с проверкой границ
         if (offset + sizeof(uint8_t) <= static_cast<size_t>(data.size())) {
             value = static_cast<results_auth>(data[offset]);
+            offset += sizeof(uint8_t);
         } else {
             qWarning() << "command_client_user_result_auth: Недостаточно байт для чтения поля value!";
         }
+
+        // Считываем никнейм
+        nickname = readStringFromByteArray(data, offset);
     }
 
     // -------------------------------------------------------------
     // Сценарий 2: ОТПРАВКА С СЕРВЕРА (Конструктор сериализации)
     // -------------------------------------------------------------
-    command_client_user_result_auth(results_auth value_) :
+    command_client_user_result_auth(results_auth value_, const QString& nickname_):
         protocol_message(id_msg_command_client),
         command(id_command_client_user_result_auth),
-        value(value_)
+        value(value_),
+        nickname(nickname_)
     {
         // Формируем внутреннее тело (data). Внешний заголовок базовый класс добавит сам!
 
@@ -59,6 +65,9 @@ public:
 
         // Добавляем 1 байт результата авторизации
         data.append(static_cast<char>(value));
+
+        // Добавляем никнейм пользователя
+        appendStringToByteArray(nickname, data);
     }
 
     // Возвращаем строгое перечисление вместо uint8_t для удобства в switch/case
@@ -66,8 +75,13 @@ public:
         return value;
     }
 
+    QString Nickname() const {
+        return nickname;
+    }
+
 private:
     results_auth value;
+    QString nickname;
 };
 
 }

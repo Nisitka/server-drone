@@ -66,26 +66,34 @@ void TaskDataBaseExecutor::run(const QString& host, int port,
 
 bool TaskDataBaseExecutor::executeTask(TaskDataBase* task)
 {
-    qDebug() << connName << "Start execute sql-task..." << task->stringSQL;
+    const QString SQL_query = task->stringSQL;
 
-    // Выполнение SQL-запроса
-    QSqlQuery query(db);
-    if (query.exec(task->stringSQL)){
+    qDebug() << connName << "Start execute sql-task..." << SQL_query;
+    bool isExecuted = false;
 
-        // Обработка результатов
-        if (!task->processRequestResult(query)){
-            qDebug() << "TaskDataBaseExecutor: request results processing error:";
-            return false;
-        }
+    /// Если задача не содержит SQL-запрос
+    if (SQL_query.isEmpty()){
+        qDebug() << "TaskDataBaseExecutor: SQL-query is empty!";
     }
     else{
-        qDebug() << "TaskDataBaseExecutor: error sql-query:" << query.lastError().text();
-        return false;
+        // Выполнение SQL-запроса
+        QSqlQuery query(db);
+        if (query.exec(SQL_query)){
+
+            // Обработка результатов
+            if (!task->processRequestResult(query)){
+                qDebug() << "TaskDataBaseExecutor: request results processing error:";
+            }else
+                isExecuted = true;
+        }
+        else{
+            qDebug() << "TaskDataBaseExecutor: error sql-query:" << query.lastError().text();
+        }
     }
 
     /// Освобождаем память от задачи
     delete task;
-    return true;
+    return isExecuted;
 }
 
 void TaskDataBaseExecutor::stop()

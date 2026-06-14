@@ -25,10 +25,11 @@ public:
 private slots:
     //
     void initClient(const QString& uuid,
+                    const QString& nickname,
                     ISocketAdapter* clientSock);
 
     // Отправить данные конкретному пользователю
-    void sendByteArray(const QString& login,
+    void sendByteArray(const QString& uuid,
                        const QByteArray& data);
 
     // Отправить всем клиентам за исключением определенных

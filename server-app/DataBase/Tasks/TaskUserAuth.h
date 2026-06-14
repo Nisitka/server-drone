@@ -33,10 +33,11 @@ public:
         case 0:{
             /// В случае успеха узнаем uuid пользователя
             const QString uuid_user = query.value(1).toString();
-            qDebug() << uuid_user << login << "- successfully logged into the database! Passing the socket to the ClientsManager.";
+            const QString nickname_user = query.value(2).toString();
+            qDebug() << uuid_user << nickname_user << login << "- successfully logged into the database! Passing the socket to the ClientsManager.";
 
             // Инициируем добавление. ClientsManager сам отправит статус successfully в initClient
-            emit clientsManager->addClient(uuid_user, socket);
+            emit clientsManager->addClient(uuid_user, nickname_user, socket);
             break;}
 
         case 1:
@@ -66,7 +67,7 @@ public:
 private:
     /// Используется только для отправки ошибочных статусов
     void sendAuthResult(command_client_user_result_auth::results_auth status) {
-        command_client_user_result_auth cmd(status);
+        command_client_user_result_auth cmd(status, "unknown");
         emit socket->trSendByteArray(cmd.toByteArray());
     }
 

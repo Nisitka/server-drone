@@ -19,7 +19,6 @@
 #include "../common/protocol/commands_server/commands_server_user/command_server_user_auth.h"
 
 #include "../server-app/DataBase/Tasks/TaskUserAuth.h"
-#include "../server-app/DataBase/Tasks/TaskUserLogOut.h"
 
 using namespace server_protocol;
 
@@ -168,12 +167,7 @@ void Server::removeSocketFromNotAuthSockets(ISocketAdapter* client)
 
 void Server::runTest()
 {
-    /// Завершаем все сессии
-    ActionsClientsManager* actions = clientsManager->Actions();
-    taskQueue->enqueue(new TaskUserLogOut(actions, "djigurda"));
-    taskQueue->enqueue(new TaskUserLogOut(actions, "user1"));
-    taskQueue->enqueue(new TaskUserLogOut(actions, "user2"));
-    taskQueue->enqueue(new TaskUserLogOut(actions, "admin"));
+
 }
 
 bool Server::run()

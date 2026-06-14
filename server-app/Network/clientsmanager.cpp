@@ -8,7 +8,6 @@
 // Подключаем фабрику серверных команд
 #include "../../common/protocol/commands_server/ServerCommandFactory.h"
 
-#include "../DataBase/Tasks/TaskUserLogOut.h"
 #include "../DataBase/Tasks/TaskRequreqMapMarkers.h"
 #include "../DataBase/Tasks/TaskUpdateMapMarker.h"
 #include "../DataBase/Tasks/TaskCreateMapMarker.h"
@@ -42,7 +41,7 @@ ActionsClientsManager* ClientsManager::Actions() const {
     return actions;
 }
 
-void ClientsManager::initClient(const QString& uuidClient, ISocketAdapter* socket)
+void ClientsManager::initClient(const QString& uuidClient, const QString& nickname, ISocketAdapter* socket)
 {
     if (clients.contains(uuidClient)) {
         qDebug() << "ClientsManager: an attempt to add an already authorized client -" << uuidClient;
@@ -61,7 +60,7 @@ void ClientsManager::initClient(const QString& uuidClient, ISocketAdapter* socke
             this,   &ClientsManager::removeClientSocket);
 
     // Отправляем успешный результат авторизации, используя автоматическую упаковку базового класса
-    command_client_user_result_auth cmd(command_client_user_result_auth::successfully);
+    command_client_user_result_auth cmd(command_client_user_result_auth::successfully, nickname);
     emit socket->trSendByteArray(cmd.toByteArray());
 
     // Сообщаем, что пользователь инициализирован
@@ -95,23 +94,25 @@ void ClientsManager::removeClientSocket()
     ISocketAdapter* clientSocket = static_cast<ISocketAdapter*>(sender());
 
     /// Ищем нужного клиента и удаляем его
-    QString login;
+    QString uuid;
     for (auto it = clients.begin(); it != clients.end(); ++it) {
         if (it.value() == clientSocket) {
-            login = it.key();
+            uuid = it.key();
             clients.erase(it);
             break;
         }
     }
 
-    /// Задача на обновление данных в базе
-    if (!login.isEmpty())
-        taskQueue->enqueue(new TaskUserLogOut(Actions(), login));
+    if (!uuid.isEmpty()){
+        /// Задача на уведомление об этом других пользователей
+        ///
+        ///
 
-    // Важно: так как SocketAdapter наследует QObject и имеет внутри deleteLater(),
-    // объект безопаснее удалять через deleteLater, а не прямой delete.
-    clientSocket->deleteLater();
-    qDebug() << "client removed:" << login;
+        // Важно: так как SocketAdapter наследует QObject и имеет внутри deleteLater(),
+        // объект безопаснее удалять через deleteLater, а не прямой delete.
+        clientSocket->deleteLater();
+        qDebug() << "client removed:" << uuid;
+    }
 }
 
 void ClientsManager::acceptMessageFromSocket()
@@ -220,13 +221,5 @@ void ClientsManager::disconnectClient(const QString& uuidClient)
 
 ClientsManager::~ClientsManager()
 {
-    // Закрываем сессии всех клиентов и уведомляем БД
-    for (auto it = clients.begin(); it != clients.end(); ++it) {
-        taskQueue->enqueue(new TaskUserLogOut(Actions(), it.key()));
-        if (it.value()) {
-            it.value()->disconnect();
-            it.value()->deleteLater();
-        }
-    }
     clients.clear();
 }

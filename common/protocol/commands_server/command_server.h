@@ -21,7 +21,10 @@ enum id_command_server: uint8_t{
     id_command_server_map_object_remove        = 102,
     id_command_server_map_object_update        = 103,
     id_command_server_map_object_set_position  = 104,
-    id_command_server_map_requreq_objects      = 100
+    id_command_server_map_requreq_objects      = 100,
+
+    id_command_server_map_requreq_type_markers        = 109,
+    id_command_server_map_result_requreq_type_markers = 110,
 };
 
 /**

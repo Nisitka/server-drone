@@ -60,6 +60,7 @@ void ClientsManager::initClient(const QString& uuidClient, const QString& nickna
             this,   &ClientsManager::removeClientSocket);
 
     // Отправляем успешный результат авторизации, используя автоматическую упаковку базового класса
+    qDebug() << "send command_client_user_result_auth:" << command_client_user_result_auth::successfully << nickname;
     command_client_user_result_auth cmd(command_client_user_result_auth::successfully, nickname);
     emit socket->trSendByteArray(cmd.toByteArray());
 

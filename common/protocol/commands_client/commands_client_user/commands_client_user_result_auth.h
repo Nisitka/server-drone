@@ -11,7 +11,7 @@ namespace server_protocol {
 class command_client_user_result_auth : public protocol_message,
                                         public command {
 public:
-    enum results_auth : uint8_t {
+    enum results_auth: uint8_t {
         successfully,
         invalid_login_or_password,
         invalid

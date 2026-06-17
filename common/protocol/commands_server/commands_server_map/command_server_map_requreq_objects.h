@@ -8,14 +8,14 @@
 namespace server_protocol {
 
 // Запрос объектов карты (команда без тела данных):
-class command_server_map_requreq_objects : public protocol_message,
+class command_server_map_requreq_objects:  public protocol_message,
                                            public command {
 public:
     // -------------------------------------------------------------
     // Сценарий 1: ПРИЕМ ИЗ СЕТИ (Конструктор десериализации)
     // -------------------------------------------------------------
     // Сюда передается чистый bodyData (уже без 4 байт сетевого заголовка протокола)
-    command_server_map_requreq_objects(const QByteArray& bodyData) :
+    command_server_map_requreq_objects(const QByteArray& bodyData):
         protocol_message(id_msg_command_server),
         command(id_command_server_map_requreq_objects)
     {

@@ -26,7 +26,10 @@ enum id_command_client : uint8_t {
     id_command_client_map_object_removed            = 34,
 
     id_command_client_map_requreq_data_markers      = 36,
-    id_command_client_map_result_requreq_markers    = 37
+    id_command_client_map_result_requreq_markers    = 37,
+
+    id_command_client_map_result_requreq_type_markers = 38,
+    id_command_client_map_update_type_marker          = 39,
     /// ----------------------------------------------------
 };
 

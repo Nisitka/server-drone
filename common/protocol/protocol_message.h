@@ -15,6 +15,18 @@ inline const uint8_t MagicByte = 0xEF; // 239 в десятичной
 // Инициализирующее значение CRC по стандарту X.25
 inline const uint16_t INIT_CRC_VALUE = 0xFFFF;
 
+// Максимальный разумный размер тела пакета для защиты от DOS-атак (например, 5 МБ)
+inline const uint32_t MAX_ALLOWED_BODY_SIZE = 5 * 1024 * 1024;
+
+// Типы изображений (форматы)
+enum format_icons: uint8_t {
+    svg = 0,
+    png = 1,
+    jpg = 2,
+
+    unknown = 255
+};
+
 /// Универсальные коды возврата
 enum results_requreq: uint8_t {
     successfully = 0,
@@ -129,6 +141,12 @@ public:
         std::memcpy(&rawSize, headerBuffer.constData() + 2, sizeof(uint16_t));
         header.bodySize = qFromBigEndian(rawSize);
 
+        if (header.bodySize > MAX_ALLOWED_BODY_SIZE) {
+            qWarning() << "parseHeader: Превышен максимальный лимит размера тела пакета!";
+            header.isValid = false;
+            return header;
+        }
+
         // ВЫЧИСЛЯЕМ И ФИКСИРУЕМ ПОЛНЫЙ РАЗМЕР ПАКЕТА С УЧЕТОМ 2 БАЙТ CRC
         // 4 байта заголовка + размер тела + 2 байта CRC в хвосте
         header.totalPacketSize = 4 + header.bodySize + 2;
@@ -148,16 +166,17 @@ protected:
 /// Вспомогательные функции
 // Добавить строку в массив данных (Безопасная кроссплатформенная версия)
 inline void appendStringToByteArray(const QString& str, QByteArray& box) {
-    const QByteArray strData = str.toUtf8();
+    QByteArray strData = str.toUtf8();
+    uint16_t strLen = 0;
 
     // Проверяем, не превышает ли строка лимиты (на случай аномально больших строк)
     if (strData.size() > std::numeric_limits<uint16_t>::max()) {
         qCritical() << "Размер строки превышает лимит uint16_t!";
-        return;
+        strData = strData.left(std::numeric_limits<uint16_t>::max());
     }
 
     // Стандартизируем тип данных — строго 2 байта для длины строки
-    uint16_t strLen = static_cast<uint16_t>(strData.size());
+    strLen = static_cast<uint16_t>(strData.size());
 
     // Конвертируем в сетевой порядок байт (Big-Endian)
     uint16_t networkLen = qToBigEndian(strLen);
@@ -170,25 +189,24 @@ inline void appendStringToByteArray(const QString& str, QByteArray& box) {
 }
 
 inline QString readStringFromByteArray(const QByteArray& box, int& offset) {
-    // Проверяем, хватает ли данных хотя бы на чтение длины (2 байта)
     if (offset + 2 > box.size()) return QString();
 
-    // Читаем 2 байта длины строки
     uint16_t rawLen;
     std::memcpy(&rawLen, box.constData() + offset, sizeof(uint16_t));
     offset += 2;
 
-    // Переводим из сетевого порядка байт обратно
     uint16_t strLen = qFromBigEndian(rawLen);
 
-    // Проверяем, хватает ли оставшихся байт в массиве на всю строку
     if (offset + strLen > box.size()) return QString();
 
-    // Извлекаем байты строки и двигаем смещение (offset) вперед
-    QByteArray strData = box.mid(offset, strLen);
+    // Безопасно: QString СРАЗУ копирует данные к себе в UTF-16.
+    // box.constData() + offset — это просто прямой указатель на память.
+    QString result = QString::fromUtf8(box.constData() + offset, strLen);
+
+    // Только после успешного создания строки сдвигаем offset
     offset += strLen;
 
-    return QString::fromUtf8(strData);
+    return result;
 }
 
 }

@@ -8,8 +8,8 @@
 
 namespace server_protocol {
 
-class command_client_map_result_requreq_markers: public protocol_message,
-                                                 public command {
+class command_client_map_result_requreq_markers:    public protocol_message,
+                                                    public command {
 public:
 
     // -------------------------------------------------------------

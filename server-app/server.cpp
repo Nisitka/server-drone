@@ -77,8 +77,7 @@ void Server::incomingConnection(qintptr socketDescriptor)
     socket->setSocketDescriptor(socketDescriptor);
     qDebug() << "new connect:" << socket->peerAddress().toString();
 
-    // Добавляем в список пытающихся ломиться в систему.
-    // Предполагается, что ваш SocketAdapter принимает QTcpSocket* в конструкторе.
+    // Добавляем в список пытающихся ломиться в систему
     ISocketAdapter* socketAdapter = new ServerSocketAdapter(socket);
     notAuthSockets.append(socketAdapter);
 
@@ -139,8 +138,8 @@ void Server::acceptTryAuthMessage()
         taskQueue->enqueue(task);
     }
     else {
-        qDebug() << "Server: Неавторизованный пользователь прислал команду id =" << id_command
-                 << ", но сервер ожидает строго команду авторизации (id =" << id_command_server_user_auth << ")";
+        qDebug() << "Server: unauthorized user sent command, id =" << id_command
+                 << ", but the server strictly expects the authorization command (id =" << id_command_server_user_auth << ")";
     }
     // Память объекта incomingCmd автоматически очистится здесь
 }

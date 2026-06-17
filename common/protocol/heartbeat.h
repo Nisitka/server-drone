@@ -5,7 +5,7 @@
 
 namespace server_protocol {
 
-inline const int HEARTBEAT_INTERVAL = 10000; // ms
+inline const int HEARTBEAT_INTERVAL = 5000; // ms
 
 class heartbeat: public protocol_message{
 

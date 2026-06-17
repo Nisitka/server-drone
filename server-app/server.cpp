@@ -97,9 +97,14 @@ void Server::acceptTryAuthMessage()
     // Запрашиваем тип сообщения верхнего уровня через геттер интерфейса
     id_message msgType = clientSocket->getLastMsgId();
 
+
     // Проверяем, что прилетела именно серверная команда
     if (msgType != id_msg_command_server) {
-        qDebug() << "Server: Получена команда от неавторизованного пользователя, но тип != id_msg_command_server";
+
+        if (msgType == server_protocol::id_msg_heartbeat)
+            qDebug() << "Server: accept id_msg_heartbeat from an unauthorized user";
+        else
+            qDebug() << "Server: A command was received from an unauthorized user, but the id_message != id_msg_command_server";
         return;
     }
 

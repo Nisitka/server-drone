@@ -90,7 +90,7 @@ void SocketAdapter::readyRead() {
                 }
 
                 qDebug() << "SocketAdapter: The header was successfully recognized. ID:"
-                         << currentHeader.msgId << "| Ожидаемый размер тела:" << currentHeader.bodySize << "байт";
+                         << currentHeader.msgId << "Expected body size:" << currentHeader.bodySize << "bytes";
             }
             else {
                 // Данных в сокете меньше 4 байт, прерываем цикл и ждем следующую порцию в readyRead

@@ -9,7 +9,7 @@
 
 using namespace server_protocol;
 
-class TaskRequreqMapMarkers : public TaskDataBase
+class TaskRequreqMapMarkers: public TaskDataBase
 {
 public:
     TaskRequreqMapMarkers(ActionsClientsManager* clientsManager_,
@@ -44,8 +44,9 @@ public:
 
             // Цепочка вложенности типов метки
             /// uint8_t vlv_types = static_cast<uint8_t>(query.value("lev").toUInt());
-            const QString str_hierarchy_chain = query.value("heir").toString();
+            const QString str_hierarchy_chain = query.value("hier").toString();
             QList<uint8_t> hierarchyChain = data_map_marker::parseHierarchyString(str_hierarchy_chain);
+            //qDebug() << "TaskRequreqMapMarkers:" << str_hierarchy_chain << hierarchyChain;
 
             // Обработка даты и времени последнего обновления
             QString text_dateTime = query.value(13).toString();

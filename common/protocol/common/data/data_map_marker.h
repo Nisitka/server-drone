@@ -130,6 +130,7 @@ public:
         appendStringToByteArray(lastUpdate.toString(format_lastUpdate), byteArray);
 
         // Сериализация цепочки принадлежности (иерархии)
+        qDebug() << "data_map_marker::appendToByteArray - hierarchy_chain" << hierarchy_chain;
         if (hierarchy_chain.size() > std::numeric_limits<uint16_t>::max()) {
             qCritical() << "data_map_marker: Цепочка принадлежности слишком длинная для uint16_t!";
             return;

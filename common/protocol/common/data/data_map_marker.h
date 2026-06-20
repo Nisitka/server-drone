@@ -141,8 +141,8 @@ public:
         }
 
         // Координаты (Сериализация double в Big-Endian)
-        uint64_t rawLon = qFromBigEndian<double>(lon);
-        uint64_t rawLat = qFromBigEndian<double>(lat);
+        uint64_t rawLon = qToBigEndian<double>(lon);
+        uint64_t rawLat = qToBigEndian<double>(lat);
         byteArray.append(reinterpret_cast<const char*>(&rawLon), sizeof(uint64_t));
         byteArray.append(reinterpret_cast<const char*>(&rawLat), sizeof(uint64_t));
 

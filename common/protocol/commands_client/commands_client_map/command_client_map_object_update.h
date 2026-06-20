@@ -9,8 +9,8 @@
 
 namespace server_protocol {
 
-class command_client_map_object_update : public protocol_message,
-                                         public command {
+class command_client_map_object_update: public protocol_message,
+                                        public command {
 public:
     // -------------------------------------------------------------
     // Сценарий 1: ПРИЕМ НА КЛИЕНТЕ (Конструктор десериализации)

@@ -9,7 +9,7 @@
 
 using namespace server_protocol;
 
-class TaskUpdateMapMarker : public TaskDataBase
+class TaskUpdateMapMarker: public TaskDataBase
 {
 public:
     TaskUpdateMapMarker(ActionsClientsManager* clientsManager_,
@@ -85,7 +85,7 @@ private:
                + "ARRAY[" + QString::number(marker.colorName.red()) + ","
                + QString::number(marker.colorName.green()) + ","
                + QString::number(marker.colorName.blue()) + "],"
-               + "'" + QString::number(marker.type_obj_id) + "-" + QString::number(marker.subtype_obj_id) + "'"
+               + "'" + marker.getHierarchyChain_str() + "'"
                + ");";
     }
 

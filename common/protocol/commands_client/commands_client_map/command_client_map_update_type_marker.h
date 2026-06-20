@@ -6,8 +6,6 @@
 
 #include "../command_client.h"
 
-#include "../../common/data/data_map_marker.h"
-
 namespace server_protocol {
 
 class command_client_map_update_type_marker:    public protocol_message,
@@ -81,7 +79,7 @@ public:
         data.append(icon_);
     }
 
-    // Виртуальный деструктор (на случай удаления через интерфейсы)
+    // На случай удаления через интерфейсы
     virtual ~command_client_map_update_type_marker() override = default;
 
     // Геттеры для доступа к данным из кода

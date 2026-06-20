@@ -42,9 +42,10 @@ public:
             uint8_t color_name_b = static_cast<uint8_t>(query.value(7).toUInt());
             QColor color_name(color_name_r, color_name_g, color_name_b);
 
-            // Тип и подтип метки
-            uint8_t id_subtype = static_cast<uint8_t>(query.value(9).toUInt());
-            uint8_t id_type    = static_cast<uint8_t>(query.value(11).toUInt());
+            // Цепочка вложенности типов метки
+            /// uint8_t vlv_types = static_cast<uint8_t>(query.value("lev").toUInt());
+            const QString str_hierarchy_chain = query.value("heir").toString();
+            QList<uint8_t> hierarchyChain = data_map_marker::parseHierarchyString(str_hierarchy_chain);
 
             // Обработка даты и времени последнего обновления
             QString text_dateTime = query.value(13).toString();
@@ -64,7 +65,7 @@ public:
 
             // Наполняем структуру маркера карты
             data_map_marker marker(uuid,
-                                   id_type, id_subtype,
+                                   hierarchyChain,
                                    name,
                                    color_name,
                                    lon, lat,

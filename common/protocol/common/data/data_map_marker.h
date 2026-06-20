@@ -12,13 +12,19 @@
 
 #include "../../protocol_message.h"
 
+#include <QColor>
+#include <QDateTime>
+#include <QDebug>
+#include <QList>
+#include <QtEndian> /// qFromBigEndian
+#include <cstring>
+
 namespace server_protocol {
 
 class data_map_marker {
 public:
     data_map_marker(const QString& uuid_,
-                    uint8_t type_obj_id_,
-                    uint8_t subtype_obj_id_,
+                    const QList<uint8_t>& hierarchy_chain_, // Изменено на uint8_t
                     const QString& name_,
                     const QColor& color_name,
                     double Lon, double Lat,
@@ -27,9 +33,8 @@ public:
         m_isEmpty(false),
         lastUpdate(lastUpdate_),
         uuid(uuid_),
-        type_obj_id(type_obj_id_),
-        subtype_obj_id(subtype_obj_id_),
-        lon(Lon), lat(Lat),
+        hierarchy_chain(hierarchy_chain_),
+        lat(Lat), lon(Lon),
         name(name_),
         colorName(color_name),
         info(info_)
@@ -37,7 +42,9 @@ public:
 
     // Конструктор десериализации (Извлекает данные из массива байт начиная с offset)
     data_map_marker(const QByteArray& data, int& offset) :
-        m_isEmpty(true) // По умолчанию считаем пустой, пока полностью не распарсим
+        m_isEmpty(true),
+        lat(0.0),
+        lon(0.0)
     {
         // Извлекаем UUID
         uuid = readStringFromByteArray(data, offset);
@@ -46,27 +53,47 @@ public:
         QString dtStr = readStringFromByteArray(data, offset);
         lastUpdate = QDateTime::fromString(dtStr, format_lastUpdate);
 
-        // Проверяем, хватает ли оставшихся байт на фиксированные поля:
-        // 2 байта (типы) + 16 байт (2 * double) + 3 байта (RGB цвет) = 21 байт минимум
-        if (offset + 21 > data.size()) {
-            qWarning() << "data_map_marker: Недостаточно байт для чтения заголовка маркера!";
+        // Десериализация цепочки принадлежности (иерархии)
+        // Сначала читаем 2 байта длины массива (количество уровней вложенности)
+        if (offset + 2 > data.size()) {
+            qWarning() << "data_map_marker: Недостаточно байт для чтения размера цепочки иерархии!";
+            return;
+        }
+        uint16_t rawChainSize;
+        std::memcpy(&rawChainSize, data.constData() + offset, sizeof(uint16_t));
+        offset += 2;
+        uint16_t chainSize = qFromBigEndian(rawChainSize);
+
+        // Проверяем, хватает ли байт на чтение всей цепочки (каждый ID теперь занимает ровно 1 байт)
+        if (offset + chainSize > data.size()) {
+            qWarning() << "data_map_marker: Пакет урезан, невозможно считать цепочку иерархии!";
             return;
         }
 
-        const char* dataPtr = data.constData();
+        hierarchy_chain.clear();
+        hierarchy_chain.reserve(chainSize);
+        for (int i = 0; i < chainSize; ++i) {
+            // Для 1 байта порядок байт (Endianness) не имеет значения, читаем "в лоб"
+            hierarchy_chain.append(static_cast<uint8_t>(data.at(offset)));
+            offset += 1;
+        }
 
-        // Тип и подтип метки
-        type_obj_id = static_cast<uint8_t>(*(dataPtr + offset));
-        offset += 1;
-        subtype_obj_id = static_cast<uint8_t>(*(dataPtr + offset));
-        offset += 1;
+        // Проверяем, хватает ли оставшихся байт на фиксированные поля:
+        // 16 байт (2 * double) + 3 байта (RGB цвет) = 19 байт минимум
+        if (offset + 19 > data.size()) {
+            qWarning() << "data_map_marker: Недостаточно байт для чтения координат и цвета!";
+            return;
+        }
 
-        // Координаты (Безопасное чтение double с учетом сетевого порядка байт через QDataStream)
-        QByteArray geoBytes = data.mid(offset, sizeof(double) * 2);
-        QDataStream geoStream(geoBytes);
-        geoStream >> lat;
-        geoStream >> lon;
-        offset += sizeof(double) * 2;
+        // Координаты (Безопасное чтение double)
+        uint64_t rawLon, rawLat;
+        std::memcpy(&rawLon, data.constData() + offset, sizeof(uint64_t));
+        offset += sizeof(uint64_t);
+        std::memcpy(&rawLat, data.constData() + offset, sizeof(uint64_t));
+        offset += sizeof(uint64_t);
+
+        lon = qFromBigEndian<double>(rawLon);
+        lat = qFromBigEndian<double>(rawLat);
 
         // Имя
         name = readStringFromByteArray(data, offset);
@@ -78,19 +105,19 @@ public:
         }
 
         // Цвет имени
-        uint8_t r = static_cast<uint8_t>(*(dataPtr + offset)); offset++;
-        uint8_t g = static_cast<uint8_t>(*(dataPtr + offset)); offset++;
-        uint8_t b = static_cast<uint8_t>(*(dataPtr + offset)); offset++;
+        uint8_t r = static_cast<uint8_t>(data.at(offset)); offset++;
+        uint8_t g = static_cast<uint8_t>(data.at(offset)); offset++;
+        uint8_t b = static_cast<uint8_t>(data.at(offset)); offset++;
         colorName = QColor(r, g, b);
 
-        // Информация
+        // Доп. информация
         info = readStringFromByteArray(data, offset);
 
-        // Если дошли сюда и не упали по проверкам — маркер успешно загружен
+        // Маркер успешно загружен
         m_isEmpty = false;
     }
 
-    data_map_marker(): m_isEmpty(true) {}
+    data_map_marker() : m_isEmpty(true), lat(0.0), lon(0.0) {}
 
     void appendToByteArray(QByteArray& byteArray) const {
         // uuid
@@ -99,16 +126,25 @@ public:
         // Дата и время последнего обновления
         appendStringToByteArray(lastUpdate.toString(format_lastUpdate), byteArray);
 
-        // Тип метки
-        byteArray.append(static_cast<char>(type_obj_id));
-        byteArray.append(static_cast<char>(subtype_obj_id));
+        // Сериализация цепочки принадлежности (иерархии)
+        if (hierarchy_chain.size() > std::numeric_limits<uint16_t>::max()) {
+            qCritical() << "data_map_marker: Цепочка принадлежности слишком длинная для uint16_t!";
+            return;
+        }
+        uint16_t chainSize = static_cast<uint16_t>(hierarchy_chain.size());
+        uint16_t networkChainSize = qToBigEndian(chainSize);
+        byteArray.append(reinterpret_cast<const char*>(&networkChainSize), sizeof(uint16_t));
 
-        // Координаты (Запись через QDataStream гарантирует Big-Endian формат для double)
-        QByteArray geoBytes;
-        QDataStream geoStream(&geoBytes, QIODevice::WriteOnly);
-        geoStream << lat;
-        geoStream << lon;
-        byteArray.append(geoBytes);
+        // Пишем каждый элемент цепочки (по 1 байту на каждый ID)
+        for (uint8_t id: hierarchy_chain) {
+            byteArray.append(static_cast<char>(id));
+        }
+
+        // Координаты (Сериализация double в Big-Endian)
+        uint64_t rawLon = qFromBigEndian<double>(lon);
+        uint64_t rawLat = qFromBigEndian<double>(lat);
+        byteArray.append(reinterpret_cast<const char*>(&rawLon), sizeof(uint64_t));
+        byteArray.append(reinterpret_cast<const char*>(&rawLat), sizeof(uint64_t));
 
         // Имя
         appendStringToByteArray(name, byteArray);
@@ -122,19 +158,21 @@ public:
         appendStringToByteArray(info, byteArray);
     }
 
-    // Убираем const, чтобы класс можно было копировать и перезаписывать в контейнерах типа QMap/QVector
     bool isEmpty() const { return m_isEmpty; }
-
     QString get_uuid() const { return uuid; }
+
+    // Цепочка вложенности типов
+    static QList<uint8_t> parseHierarchyString(const QString& hierarchyStr);
+    static QString makeHierarchyString(const QList<uint8_t>& chain);
+    QList<uint8_t> getHierarchyChain_list() const { return hierarchy_chain; }
+    QString getHierarchyChain_str() const {return makeHierarchyString(hierarchy_chain); }
 
     QDateTime lastUpdate;
     static const QString format_lastUpdate;
 
-    uint8_t type_obj_id = 0;
-    uint8_t subtype_obj_id = 0;
-
-    double lat = 0.0;
-    double lon = 0.0;
+    // Координаты
+    double lat;
+    double lon;
 
     QString name;
     QColor colorName;
@@ -142,13 +180,67 @@ public:
 
 private:
     bool m_isEmpty;
-    QString uuid; // UUID не должен меняться
+    QString uuid;
+
+    // Цепочка вложенности, где каждый уровень кодируется 1 байтом (0..255)
+    QList<uint8_t> hierarchy_chain;
 };
 
 inline const QString data_map_marker::format_lastUpdate = "yyyy-MM-dd HH:mm:ss.zzz";
 
+/**
+ * @brief Преобразует строку вида "id_0-id_1-...-id_n" в список uint8_t
+    * @param hierarchyStr Строка из базы данных
+    * @return Набор байт иерархии. Если строка битая, вернет пустой список или пропустит некорректный элемент. */
+inline QList<uint8_t> data_map_marker::parseHierarchyString(const QString& hierarchyStr) {
+    QList<uint8_t> chain;
+
+    if (hierarchyStr.isEmpty()) {
+        return chain;
+    }
+
+    // Разбиваем строку по дефису
+    // Вариант для Qt 6 (работает без выделения памяти в куче через QStringView)
+    const auto parts = QStringView(hierarchyStr).split('-', Qt::SkipEmptyParts);
+    chain.reserve(parts.size());
+
+    for (const auto& part : parts) {
+        bool ok = false;
+        // Конвертируем в int, чтобы проверить границы uint8_t (0..255)
+        int id = part.toInt(&ok);
+
+        if (!ok) {
+            qWarning() << "parseHierarchyString: Ошибка конвертации элемента строки в число:" << part;
+            continue; // Или return QList<uint8_t>(); если критично прервать весь пакет
+        }
+
+        if (id < 0 || id > 255) {
+            qWarning() << "parseHierarchyString: ID выходит за границы uint8_t (0-255):" << id;
+            continue;
+        }
+
+        chain.append(static_cast<uint8_t>(id));
+    }
+
+    return chain;
+}
+
+/**
+ * @brief Обратная функция: преобразует цепочку обратно в строку для сохранения в БД
+ */
+inline QString data_map_marker::makeHierarchyString(const QList<uint8_t>& chain) {
+    if (chain.isEmpty()) return QString();
+
+    QStringList parts;
+    parts.reserve(chain.size());
+    for (uint8_t id : chain) {
+        parts.append(QString::number(id));
+    }
+
+    return parts.join('-');
 }
 
 
+} // namespace server_protocol
 
 #endif // DATA_MAP_MARKER_H

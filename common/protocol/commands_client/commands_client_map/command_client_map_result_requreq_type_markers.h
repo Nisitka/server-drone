@@ -76,6 +76,7 @@ public:
         appendStringToByteArray(snapshot.toString(data_map_marker::format_lastUpdate), data);
     }
 
+    // На случай удаления через интерфейсы
     virtual ~command_client_map_result_requreq_type_markers() override = default;
 
     // Геттеры для внешнего кода
@@ -87,9 +88,10 @@ public:
     bool isValid() const { return snapshot.isValid() && result != invalid; }
 
 private:
-    results_requreq result;
-    uint8_t count_type_markers;
-    QDateTime snapshot;
+    results_requreq result;     // Готов ди сервер вообще отправить их
+    uint8_t count_type_markers; // Сколько ожидать типов
+    QDateTime snapshot;         // По состоянию на какое время будут эти типы
+
 };
 
 }

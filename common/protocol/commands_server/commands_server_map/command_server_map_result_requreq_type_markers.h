@@ -9,11 +9,11 @@
 
 namespace server_protocol {
 
-class data_map_marker;
-
+/// Ответ серверу что клиент получил (или не смог получить) типы меток
 class command_server_map_result_requreq_type_markers:   public protocol_message,
                                                         public command {
 
+public:
     command_server_map_result_requreq_type_markers(const QByteArray& bodyData):
         protocol_message(id_msg_command_server),
     command(id_command_server_map_result_requreq_type_markers)
@@ -54,11 +54,14 @@ class command_server_map_result_requreq_type_markers:   public protocol_message,
         appendStringToByteArray(snapshot.toString(data_map_marker::format_lastUpdate), data);
     }
 
-    QDateTime Snapshot() const {
+    // На случай удаления через интерфейсы
+    virtual ~command_server_map_result_requreq_type_markers() override = default;
+
+    QDateTime getSnapshot() const {
         return snapshot;
     }
 
-    results_requreq Result() const {
+    results_requreq getResult() const {
         return (results_requreq)result;
     }
 

@@ -46,17 +46,16 @@ public:
         lat(0.0),
         lon(0.0)
     {
-        // Извлекаем UUID
+        // UUID строки
         uuid = readStringFromByteArray(data, offset);
 
-        // Дата и время последнего обновления
+        // Дата обновления
         QString dtStr = readStringFromByteArray(data, offset);
         lastUpdate = QDateTime::fromString(dtStr, format_lastUpdate);
 
-        // Десериализация цепочки принадлежности (иерархии)
-        // Сначала читаем 2 байта длины массива (количество уровней вложенности)
+        // Читаем размер цепочки иерархии (2 байта)
         if (offset + 2 > data.size()) {
-            qWarning() << "data_map_marker: Недостаточно байт для чтения размера цепочки иерархии!";
+            qWarning() << "data_map_marker: Недостаточно байт для чтения размера цепочки!";
             return;
         }
         uint16_t rawChainSize;
@@ -64,28 +63,27 @@ public:
         offset += 2;
         uint16_t chainSize = qFromBigEndian(rawChainSize);
 
-        // Проверяем, хватает ли байт на чтение всей цепочки (каждый ID теперь занимает ровно 1 байт)
+        // Читаем саму цепочку (по 1 байту на элемент)
         if (offset + chainSize > data.size()) {
-            qWarning() << "data_map_marker: Пакет урезан, невозможно считать цепочку иерархии!";
+            qWarning() << "data_map_marker: Пакет урезан, невозможно считать цепочку иерархии! Требуется байт:" << chainSize << "Осталось в пакете:" << (data.size() - offset);
             return;
         }
 
         hierarchy_chain.clear();
         hierarchy_chain.reserve(chainSize);
         for (int i = 0; i < chainSize; ++i) {
-            // Для 1 байта порядок байт (Endianness) не имеет значения, читаем "в лоб"
+            // Строго используем .at() для предотвращения неявного копирования массива в Qt
             hierarchy_chain.append(static_cast<uint8_t>(data.at(offset)));
             offset += 1;
         }
 
-        // Проверяем, хватает ли оставшихся байт на фиксированные поля:
-        // 16 байт (2 * double) + 3 байта (RGB цвет) = 19 байт минимум
+        // Проверяем остаток под double координаты и цвет (8 + 8 + 3 = 19 байт)
         if (offset + 19 > data.size()) {
-            qWarning() << "data_map_marker: Недостаточно байт для чтения координат и цвета!";
+            qWarning() << "data_map_marker: Недостаточно байт для координат и цвета!";
             return;
         }
 
-        // Координаты (Безопасное чтение double)
+        // 6. Читаем координаты в порядке СЕРВЕРА (Сначала Lon, затем Lat)
         uint64_t rawLon, rawLat;
         std::memcpy(&rawLon, data.constData() + offset, sizeof(uint64_t));
         offset += sizeof(uint64_t);
@@ -98,22 +96,22 @@ public:
         // Имя
         name = readStringFromByteArray(data, offset);
 
-        // Снова проверяем остаток перед чтением цвета (3 байта)
+        // Проверяем остаток под цвет (3 байта)
         if (offset + 3 > data.size()) {
-            qWarning() << "data_map_marker: Недостаточно байт для чтения цвета!";
+            qWarning() << "data_map_marker: Недостаточно байт для цвета!";
             return;
         }
 
-        // Цвет имени
+        // Читаем RGB компоненты цвета
         uint8_t r = static_cast<uint8_t>(data.at(offset)); offset++;
         uint8_t g = static_cast<uint8_t>(data.at(offset)); offset++;
         uint8_t b = static_cast<uint8_t>(data.at(offset)); offset++;
         colorName = QColor(r, g, b);
 
-        // Доп. информация
+        // Дополнительная информация
         info = readStringFromByteArray(data, offset);
 
-        // Маркер успешно загружен
+        // Маркер успешно и полностью распарсен
         m_isEmpty = false;
     }
 

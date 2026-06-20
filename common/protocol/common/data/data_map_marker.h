@@ -165,6 +165,7 @@ public:
     static QList<uint8_t> parseHierarchyString(const QString& hierarchyStr);
     static QString makeHierarchyString(const QList<uint8_t>& chain);
     QList<uint8_t> getHierarchyChain_list() const { return hierarchy_chain; }
+    void setHierarchyChain(const QList<uint8_t>& hierarchy_chain_) { hierarchy_chain = hierarchy_chain_;}
     QString getHierarchyChain_str() const {return makeHierarchyString(hierarchy_chain); }
 
     QDateTime lastUpdate;

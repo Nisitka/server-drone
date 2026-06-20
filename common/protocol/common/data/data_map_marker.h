@@ -83,15 +83,20 @@ public:
             return;
         }
 
-        // 6. Читаем координаты в порядке СЕРВЕРА (Сначала Lon, затем Lat)
-        uint64_t rawLon, rawLat;
-        std::memcpy(&rawLon, data.constData() + offset, sizeof(uint64_t));
-        offset += sizeof(uint64_t);
-        std::memcpy(&rawLat, data.constData() + offset, sizeof(uint64_t));
-        offset += sizeof(uint64_t);
+        double rawLon = 0.0;
+        double rawLat = 0.0;
 
-        lon = qFromBigEndian<double>(rawLon);
-        lat = qFromBigEndian<double>(rawLat);
+        // Читаем 8 байт долготы
+        std::memcpy(&rawLon, data.constData() + offset, sizeof(double));
+        offset += sizeof(double);
+
+        // Читаем 8 байт широты
+        std::memcpy(&rawLat, data.constData() + offset, sizeof(double));
+        offset += sizeof(double);
+
+        // Переводим из сетевого формата в формат текущего процессора
+        lon = qFromBigEndian(rawLon);
+        lat = qFromBigEndian(rawLat);
 
         // Имя
         name = readStringFromByteArray(data, offset);
@@ -139,10 +144,11 @@ public:
         }
 
         // Координаты (Сериализация double в Big-Endian)
-        uint64_t rawLon = qToBigEndian<double>(lon);
-        uint64_t rawLat = qToBigEndian<double>(lat);
-        byteArray.append(reinterpret_cast<const char*>(&rawLon), sizeof(uint64_t));
-        byteArray.append(reinterpret_cast<const char*>(&rawLat), sizeof(uint64_t));
+        // Прямая упаковка double в сетевой формат
+        double netLon = qToBigEndian(lon);
+        double netLat = qToBigEndian(lat);
+        byteArray.append(reinterpret_cast<const char*>(&netLon), sizeof(double));
+        byteArray.append(reinterpret_cast<const char*>(&netLat), sizeof(double));
 
         // Имя
         appendStringToByteArray(name, byteArray);

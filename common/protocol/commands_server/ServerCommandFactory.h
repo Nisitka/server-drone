@@ -5,6 +5,7 @@
 #include "./commands_server_map/command_server_map_object_update.h"
 #include "./commands_server_map/command_server_map_remove_object.h"
 #include "./commands_server_map/command_server_map_requreq_objects.h"
+#include "./commands_server_map/command_server_map_requreq_type_markers.h"
 
 #include "./commands_server_user/command_server_user.h"
 #include "./commands_server_user/command_server_user_auth.h"
@@ -39,15 +40,18 @@ public:
         case id_command_server_map_requreq_objects:
             return std::make_unique<command_server_map_requreq_objects>(bodyData);
 
+        case id_command_server_map_requreq_type_markers:
+            return std::make_unique<command_server_map_requreq_type_markers>(bodyData);
+
         case id_command_server_map_object_set_position:
-            // Здесь будет ваш класс для установки позиции, когда вы его напишете
+            // Здесь будет класс для установки позиции, когда он будет
             // return std::make_unique<command_server_map_object_set_position>(bodyData);
-            qWarning() << "Фабрика: Команда set_position еще не реализована";
+            qWarning() << "ServerCommandFactory: cmd set_position not ---------------------------!";
             return nullptr;
 
         case id_command_server_unknown:
         default:
-            qWarning() << "Фабрика: Получен неизвестный id_cmd =" << static_cast<uint8_t>(cmdId);
+            qWarning() << "ServerCommandFactory: accpet unknown id_cmd =" << static_cast<uint8_t>(cmdId);
             return nullptr;
         }
     }

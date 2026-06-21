@@ -30,42 +30,99 @@ public:
 
     bool processRequestResult(QSqlQuery& query) override final
     {
-        QList<command_client_map_result_requreq_type_markers::TypeRecord> typesList;
+        if (isForced){
+
+            return proccesingRequestResult_forcedRequred(query);
+        }
+        else{
+
+            // Новые типы
+            QList<command_client_map_result_requreq_type_markers::TypeRecord> types_list;
+
+            // Типы которые удалили
+            QList<QList<uint8_t>> deleted_chains_list;
+
+            // id типа (цепочка типов)
+            const QString hierarchy_chain_str = query.value(2).toString();
+            QList <uint8_t> hierarchy_chain = data_map_marker::parseHierarchyString(hierarchy_chain_str);
+
+            while (query.next())
+            {
+                // Удален ли этот тип
+                const bool isDeleted = query.value(3).toBool();
+
+                if (isDeleted){
+                    deleted_chains_list.append(hierarchy_chain);
+                    continue;
+                }
+
+                // Имя типа
+                const QString name_type = query.value(0).toString();
+
+                // Изображение типа
+                const QByteArray iconBytes = query.value(1).toByteArray();
+
+                command_client_map_result_requreq_type_markers::TypeRecord record;
+                record.hierarchy_chain = hierarchy_chain;
+                record.name = name_type;
+                record.iconBytes = iconBytes;
+
+                types_list.append(record);
+            }
+
+            /// Компануем команду клиенту
+            QDateTime date_time = QDateTime::currentDateTime();
+            results_requreq result = successfully;
+
+            command_client_map_result_requreq_type_markers cmd(result, date_time, types_list, deleted_chains_list);
+            emit clientsManager->sendByteArray(uuid_client, cmd.toByteArray());
+
+            return true;
+        }
+    }
+
+private:
+    bool proccesingRequestResult_forcedRequred(QSqlQuery& query) const{
+
+        // В случае если получаем все типы с самого нуля, нам неважно какие типы были удалены
+        QList<command_client_map_result_requreq_type_markers::TypeRecord> types_list;
 
         while (query.next())
         {
+            // Имя типа
             const QString name_type = query.value(0).toString();
 
-            // id типа в виде строки
-            const QString hierarchy_chain = query.value(1).toString();
+            // Изображение типа
+            const QByteArray iconBytes = query.value(1).toByteArray();
 
-            const QByteArray iconBytes = query.value(2).toByteArray();
+            // id типа в виде строки
+            const QString hierarchy_chain = query.value(2).toString();
 
             command_client_map_result_requreq_type_markers::TypeRecord record;
             record.hierarchy_chain = data_map_marker::parseHierarchyString(hierarchy_chain);
             record.name = name_type;
             record.iconBytes = iconBytes;
 
-            typesList.append(record);
+            types_list.append(record);
         }
 
         /// Компануем команду клиенту
         QDateTime date_time = QDateTime::currentDateTime();
         results_requreq result = invalid;
-        if (!typesList.isEmpty()){
+        // Если ни одного типа нет, значит какая-то херня
+        if (!types_list.isEmpty()){
             result = successfully;
         }
         else{
             result = invalid;
         }
 
-        command_client_map_result_requreq_type_markers cmd(result, date_time, typesList);
+        command_client_map_result_requreq_type_markers cmd(result, date_time, types_list, QList<QList<uint8_t>>{});
         emit clientsManager->sendByteArray(uuid_client, cmd.toByteArray());
 
         return true;
     }
 
-private:
     ActionsClientsManager* clientsManager;
     const QString uuid_client;
 

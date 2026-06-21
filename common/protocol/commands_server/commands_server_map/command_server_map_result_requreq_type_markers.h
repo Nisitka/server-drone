@@ -15,7 +15,7 @@ class command_server_map_result_requreq_type_markers : public protocol_message,
                                                        public command {
 public:
 
-    /// ПРИЕМ НА СЕРВЕРЕ (Десериализация)
+    /// ПРИЕМ НА СЕРВЕРЕ
     explicit command_server_map_result_requreq_type_markers(const QByteArray& bodyData) :
         protocol_message(id_msg_command_server),
         command(id_command_server_map_result_requreq_type_markers),
@@ -56,7 +56,7 @@ public:
         m_isValid = true;
     }
 
-    /// ОТПРАВКА С КЛИЕНТА (Сериализация)
+    /// ОТПРАВКА С КЛИЕНТА
     command_server_map_result_requreq_type_markers(const QDateTime& snapshot_, results_requreq result_) :
         protocol_message(id_msg_command_server),
         command(id_command_server_map_result_requreq_type_markers),

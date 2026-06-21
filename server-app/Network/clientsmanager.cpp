@@ -12,12 +12,13 @@
 #include "../DataBase/Tasks/TaskUpdateMapMarker.h"
 #include "../DataBase/Tasks/TaskCreateMapMarker.h"
 #include "../DataBase/Tasks/TaskRemoveMapMarker.h"
+#include "../DataBase/Tasks/TaskRequredTypesMapMarkers.h"
 
 #include "../../common/protocol/commands_server/command_server.h"
 #include "../../common/protocol/commands_server/commands_server_map/command_server_map_object_update.h"
 #include "../../common/protocol/commands_server/commands_server_map/command_server_map_object_create.h"
 #include "../../common/protocol/commands_server/commands_server_map/command_server_map_remove_object.h"
-#include "../../common/protocol/commands_server/commands_server_map/command_server_map_requreq_objects.h"
+#include "../../common/protocol/commands_server/commands_server_map/command_server_map_requreq_type_markers.h"
 
 #include "../../common/protocol/commands_client/commands_client_user/commands_client_user_result_auth.h"
 
@@ -166,7 +167,7 @@ QString ClientsManager::socketToLogin(ISocketAdapter* socket) const
     return QString();
 }
 
-void ClientsManager::processingMsg_command(const QByteArray& bodyData, const QString& login_client)
+void ClientsManager::processingMsg_command(const QByteArray& bodyData, const QString& uuid_client)
 {
     // Задействуем нашу полиморфную фабрику команд для автоматического разбора
     std::unique_ptr<command> incomingCmd = ServerCommandFactory::createCommand(bodyData);
@@ -175,28 +176,33 @@ void ClientsManager::processingMsg_command(const QByteArray& bodyData, const QSt
     if (incomingCmd) {
 
         uint8_t id_command = incomingCmd->id_command();
-        qDebug() << "ClientsManager: processing the id command =" << id_command << "for client" << login_client;
+        qDebug() << "ClientsManager: processing the id command =" << id_command << "for client" << uuid_client;
 
         switch (id_command) {
         case id_command_server_map_requreq_objects: {
-            taskQueue->enqueue(new TaskRequreqMapMarkers(Actions(), login_client));
+            taskQueue->enqueue(new TaskRequreqMapMarkers(Actions(), uuid_client));
             break;
         }
         case id_command_server_map_object_update: {
             // Безопасно приводим указатель к конкретному типу команды, чтобы передать его в задачу БД
             auto* cmd = static_cast<command_server_map_object_update*>(incomingCmd.get());
             // Передаем копию объекта команды (или ссылку, если Task принимает её так)
-            taskQueue->enqueue(new TaskUpdateMapMarker(Actions(), login_client, *cmd));
+            taskQueue->enqueue(new TaskUpdateMapMarker(Actions(), uuid_client, *cmd));
             break;
         }
         case id_command_server_map_object_create: {
             auto* cmd = static_cast<command_server_map_object_create*>(incomingCmd.get());
-            taskQueue->enqueue(new TaskCreateMapMarker(Actions(), login_client, *cmd));
+            taskQueue->enqueue(new TaskCreateMapMarker(Actions(), uuid_client, *cmd));
             break;
         }
         case id_command_server_map_object_remove: {
             auto* cmd = static_cast<command_server_map_remove_object*>(incomingCmd.get());
-            taskQueue->enqueue(new TaskRemoveMapMarker(Actions(), login_client, *cmd));
+            taskQueue->enqueue(new TaskRemoveMapMarker(Actions(), uuid_client, *cmd));
+            break;
+        }
+        case id_command_server_map_result_requreq_type_markers: {
+            auto* cmd = static_cast<command_server_map_requreq_type_markers*>(incomingCmd.get());
+            taskQueue->enqueue(new TaskRequredTypesMapMarkers(Actions(), uuid_client, *cmd));
             break;
         }
         default:

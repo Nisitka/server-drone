@@ -9,9 +9,6 @@ class TaskDataBase
 {
 public:
 
-    // SQL-запрос который посылаем БД
-    const QString stringSQL;
-
     TaskDataBase(const QString& stringSQL_):
         stringSQL(stringSQL_){/* ... */}
 
@@ -20,6 +17,14 @@ public:
 
     // Действия, которые производим с результатом SQL-запроса
     virtual bool processRequestResult(QSqlQuery& query) = 0;
+
+    QString getSQL() const{
+        return stringSQL;
+    }
+
+protected:
+    // SQL-запрос который посылаем БД
+    QString stringSQL;
 };
 
 #endif // TASKDATABASE_H

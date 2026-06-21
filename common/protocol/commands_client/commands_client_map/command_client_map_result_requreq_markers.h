@@ -12,9 +12,7 @@ class command_client_map_result_requreq_markers:    public protocol_message,
                                                     public command {
 public:
 
-    // -------------------------------------------------------------
-    // Сценарий 1: ПРИЕМ НА КЛИЕНТЕ (Конструктор десериализации)
-    // -------------------------------------------------------------
+    /// ПРИЕМ НА КЛИЕНТЕ
     // Сюда передается чистый bodyData (уже без 4 байт сетевого заголовка протокола)
     command_client_map_result_requreq_markers(const QByteArray& bodyData):
         protocol_message(id_msg_command_client),
@@ -50,19 +48,17 @@ public:
         }
     }
 
-    // -------------------------------------------------------------
-    // Сценарий 2: ОТПРАВКА С СЕРВЕРА (Конструктор сериализации)
-    // -------------------------------------------------------------
+    /// ОТПРАВКА С СЕРВЕРА
     command_client_map_result_requreq_markers(results_requreq result_, uint32_t count_markers_) :
         protocol_message(id_msg_command_client),
         command(id_command_client_map_result_requreq_markers),
         result(result_),
         count_markers(count_markers_)
     {
-        // Сначала добавляем идентификатор конкретной команды (1 байт)
+        // Идентификатор конкретной команды (1 байт)
         data.append(static_cast<char>(id_cmd));
 
-        // Добавляем 1 байт результата запроса
+        // Результата запроса
         data.append(static_cast<char>(result));
 
         // Переводим количество маркеров в сетевой порядок байт (4 байта) и добавляем в буфер

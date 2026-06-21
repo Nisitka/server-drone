@@ -66,7 +66,7 @@ void TaskDataBaseExecutor::run(const QString& host, int port,
 
 bool TaskDataBaseExecutor::executeTask(TaskDataBase* task)
 {
-    const QString SQL_query = task->stringSQL;
+    const QString SQL_query = task->getSQL();
 
     qDebug() << connName << "Start execute sql-task..." << SQL_query;
     bool isExecuted = false;

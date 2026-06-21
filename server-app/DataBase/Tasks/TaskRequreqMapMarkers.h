@@ -13,9 +13,9 @@ class TaskRequreqMapMarkers: public TaskDataBase
 {
 public:
     TaskRequreqMapMarkers(ActionsClientsManager* clientsManager_,
-                          const QString& login_client) :
+                          const QString& uuid_client_):
         TaskDataBase("SELECT * FROM __GetInfoMarkers()"),
-        login(login_client),
+        uuid_client(uuid_client_),
         clientsManager(clientsManager_)
     { }
 
@@ -85,22 +85,22 @@ public:
             successfully,
             totalMarkers
             );
-        emit clientsManager->sendByteArray(login, cmd_result.toByteArray());
+        emit clientsManager->sendByteArray(uuid_client, cmd_result.toByteArray());
 
         // Отправляем сами маркеры один за другим из нашего списка
         for (const data_map_marker& marker: std::as_const(markersList))
         {
             command_client_map_requreq_data_markers cmd(marker);
-            emit clientsManager->sendByteArray(login, cmd.toByteArray());
+            emit clientsManager->sendByteArray(uuid_client, cmd.toByteArray());
         }
 
-        qDebug() << "TaskRequreqMapMarkers: Успешно отправлено" << totalMarkers << "маркеров пользователю" << login;
+        qDebug() << "TaskRequreqMapMarkers: Successfully sent" << totalMarkers << "markers for the user(uuid) -" << uuid_client;
         return true;
     }
 
 private:
     ActionsClientsManager* clientsManager;
-    const QString login;
+    const QString uuid_client;
 };;
 
 #endif // TASKREQUREQMAPMARKERS_H

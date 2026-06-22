@@ -51,7 +51,7 @@ public:
 
         // Дата обновления
         QString dtStr = readStringFromByteArray(data, offset);
-        lastUpdate = QDateTime::fromString(dtStr, format_lastUpdate);
+        lastUpdate = QDateTime::fromString(dtStr, format_lastUpdate());
 
         // Читаем размер цепочки иерархии (2 байта)
         if (offset + 2 > data.size()) {
@@ -127,7 +127,7 @@ public:
         appendStringToByteArray(uuid, byteArray);
 
         // Дата и время последнего обновления
-        appendStringToByteArray(lastUpdate.toString(format_lastUpdate), byteArray);
+        appendStringToByteArray(lastUpdate.toString(format_lastUpdate()), byteArray);
 
         // Сериализация цепочки принадлежности (иерархии)
         qDebug() << "data_map_marker::appendToByteArray - hierarchy_chain" << hierarchy_chain;
@@ -174,7 +174,9 @@ public:
     QString getHierarchyChain_str() const {return makeHierarchyString(hierarchy_chain); }
 
     QDateTime lastUpdate;
-    static const QString format_lastUpdate;
+    static QString format_lastUpdate() {
+        return QStringLiteral("yyyy-MM-dd HH:mm:ss.zzz");
+    }
 
     // Координаты
     double lat;
@@ -191,8 +193,6 @@ private:
     // Цепочка вложенности, где каждый уровень кодируется 1 байтом (0..255)
     QList<uint8_t> hierarchy_chain;
 };
-
-inline const QString data_map_marker::format_lastUpdate = "yyyy-MM-dd HH:mm:ss.zzz";
 
 /**
  * @brief Преобразует строку вида "id_0-id_1-...-id_n" в список uint8_t

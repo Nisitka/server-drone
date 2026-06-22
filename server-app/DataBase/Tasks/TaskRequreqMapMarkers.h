@@ -7,6 +7,8 @@
 #include "../../../common/protocol/commands_client/commands_client_map/command_client_map_requreq_data_markers.h"
 #include "../../../common/protocol/commands_client/commands_client_map/command_client_map_result_requreq_markers.h"
 
+#include <QSqlError>
+
 using namespace server_protocol;
 
 class TaskRequreqMapMarkers: public TaskDataBase
@@ -21,6 +23,22 @@ public:
 
     bool processRequestResult(QSqlQuery& query) override final
     {
+        /// ЗАЩИТА ОТ СБОЕВ СУБД:
+        // Проверяем, произошла ли критическая ошибка при выполнении SQL-запроса
+        if (query.lastError().isValid()) {
+            qWarning() << "TaskRequreqMapMarkers: critical error SQL-request!"
+                       << query.lastError().text();
+
+            // Отправляем клиенту статус invalid, так как запрос физически сломался
+            command_client_map_result_requreq_markers cmd_result(
+                invalid,
+                0
+                );
+            emit clientsManager->sendByteArray(uuid_client, cmd_result.toByteArray());
+
+            return false; // Сигнализируем пулу потоков, что задача завершилась со сбоем
+        }
+
         QVector<data_map_marker> markersList;
 
         // Извлекаем данные из БД во временный список
@@ -57,7 +75,7 @@ public:
                 text_dateTime.chop(3);
             }
 
-            QDateTime lastUpdate = QDateTime::fromString(text_dateTime, data_map_marker::format_lastUpdate);
+            QDateTime lastUpdate = QDateTime::fromString(text_dateTime, data_map_marker::format_lastUpdate());
 
             // Если парсинг времени по формату не удался, ставим текущее время, чтобы не ломать протокол
             if (!lastUpdate.isValid()) {
@@ -76,7 +94,7 @@ public:
             markersList.append(marker);
         }
 
-        // Гарантировано знаем точное количество элементов на любой СУБД (PostgreSQL/SQLite)
+        // Узнаем точное количество элементов
         uint32_t totalMarkers = static_cast<uint32_t>(markersList.size());
 
         // Сообщаем клиенту о начале и количестве отправляемых меток

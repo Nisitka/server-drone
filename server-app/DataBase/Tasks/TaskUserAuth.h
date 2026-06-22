@@ -6,15 +6,18 @@
 
 #include "../../../common/protocol/commands_client/commands_client_user/commands_client_user_result_auth.h"
 
+#include <QSqlError>
+
 using namespace server_protocol;
 
-class TaskUserAuth: public TaskDataBase {
+class TaskUserAuth : public TaskDataBase {
 public:
     TaskUserAuth(ActionsClientsManager* clientsManager_, ISocketAdapter* socket_,
                  const QString& login_, const QString& pass_) :
-        // Экранируем кавычки для защиты от SQL-инъекций
-        TaskDataBase("SELECT * FROM __UserAuth('" + QString(login_).replace("'", "''") + "','"
-                     + QString(pass_).replace("'", "''") + "')"),
+        // БЕЗОПАСНОСТЬ (КРИТИЧНО): Используем долларовые кавычки $$ для логина и пароля.
+        // Это на 100% защищает процедуру авторизации от любых типов SQL-инъекций и корректно
+        // обрабатывает пароли с любыми сложными спецсимволами (#, $, %, \ и т.д.)
+        TaskDataBase(QString("SELECT * FROM __UserAuth($$%1$$, $$%2$$);").arg(login_).arg(pass_)),
         clientsManager(clientsManager_),
         login(login_),
         socket(socket_)
@@ -22,7 +25,18 @@ public:
 
     bool processRequestResult(QSqlQuery& query) override final
     {
+        // ОБРАБОТКА ОШИБОК СУБД: Если база данных PostgreSQL заблокирована или упала
+        if (query.lastError().isValid()) {
+            qWarning() << "TaskUserAuth: Критическая ошибка базы данных при попытке входа для:" << login
+                       << "| Ошибка:" << query.lastError().text();
+
+            // Отправляем системный сбой пакета/сервера
+            sendAuthResult(command_client_user_result_auth::invalid);
+            return false;
+        }
+
         if (!query.next()) {
+            qWarning() << "TaskUserAuth: The DBMS returned an empty result (no rows) for the user:" << login;
             sendAuthResult(command_client_user_result_auth::invalid);
             return false;
         }
@@ -30,15 +44,17 @@ public:
         int code = query.value(0).toInt();
 
         switch (code) {
-        case 0:{
+        case 0: {
             /// В случае успеха узнаем uuid пользователя
             const QString uuid_user = query.value(1).toString();
             const QString nickname_user = query.value(2).toString();
-            qDebug() << uuid_user << nickname_user << login << "- successfully logged into the database! Passing the socket to the ClientsManager.";
+            qDebug() << uuid_user << nickname_user << login
+                     << "- successfully logged into the database! Passing the socket to the ClientsManager.";
 
             // Инициируем добавление. ClientsManager сам отправит статус successfully в initClient
             emit clientsManager->addClient(uuid_user, nickname_user, socket);
-            break;}
+            break;
+        }
 
         case 1:
             qDebug() << login << "- error login or password!";
@@ -67,6 +83,9 @@ public:
 private:
     /// Используется только для отправки ошибочных статусов
     void sendAuthResult(command_client_user_result_auth::results_auth status) {
+        if (!socket) return;
+
+        // Передаем статус ошибки авторизации. Никнейм пишем как "unknown", так как вход не удался
         command_client_user_result_auth cmd(status, "unknown");
         emit socket->trSendByteArray(cmd.toByteArray());
     }

@@ -63,7 +63,7 @@ public:
 
         // Дата и время снимка данных
         const QString dtStr = readStringFromByteArray(data, offset);
-        snapshot = QDateTime::fromString(dtStr, data_map_marker::format_lastUpdate);
+        snapshot = QDateTime::fromString(dtStr, data_map_marker::format_lastUpdate());
         if (!snapshot.isValid()) return;
 
         // ИНТЕГРАЦИЯ ВАРИАНТА 2: Читаем количество УДАЛЕННЫХ цепочек (2 байта, Big-Endian)
@@ -165,7 +165,7 @@ public:
         data.append(reinterpret_cast<const char*>(&networkLiveCount), sizeof(uint16_t));
 
         // Дата и время снимка данных
-        appendStringToByteArray(snapshot.toString(data_map_marker::format_lastUpdate), data);
+        appendStringToByteArray(snapshot.toString(data_map_marker::format_lastUpdate()), data);
 
         // Количество УДАЛЕННЫХ цепочек (2 байта, Big-Endian)
         uint16_t deletedCount = static_cast<uint16_t>(deleted_chains_list.size());

@@ -30,7 +30,9 @@ enum format_icons: uint8_t {
 /// Универсальные коды возврата
 enum results_requreq: uint8_t {
     successfully = 0,
-    invalid      = 1
+    error        = 1,
+
+    invalid      = 29
 };
 
 // Типы сообщений в протоколе

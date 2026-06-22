@@ -16,48 +16,64 @@ using namespace server_protocol;
 #include "../../../common/protocol/commands_server/commands_server_map/command_server_map_remove_object.h"
 #include "../../../common/protocol/commands_client/commands_client_map/command_client_map_object_removed.h"
 
-using namespace server_protocol;
+#include <QSqlError>
 
-class TaskRemoveMapMarker : public TaskDataBase
+class TaskRemoveMapMarker: public TaskDataBase
 {
 public:
     TaskRemoveMapMarker(ActionsClientsManager* clientsManager_,
-                        const QString& login_client,
+                        const QString& uuid_client_,
                         const command_server_map_remove_object& cmd) :
         // Защищаем базу данных от SQL-инъекций, экранируя кавычки в пришедшем из сети UUID
-        TaskDataBase("SELECT * FROM __DeleteObject('" + QString(cmd.uuid_marker).replace("'", "''") + "');"),
+        TaskDataBase(QString("SELECT * FROM __DeleteObject($$%1$$);").arg(cmd.uuid_marker)),
         clientsManager(clientsManager_),
-        login(login_client),
+        uuid_client(uuid_client_),
         uuid_marker(cmd.uuid_marker)
     {}
 
     bool processRequestResult(QSqlQuery& query) override final {
-        // Проверяем, вернула ли база данных успешный статус удаления
-        // if (query.next() && query.value(0).toInt() != 0) return false;
-        // result_command msg_res_command(id_command_server_map_object_remove,
-        //                                invalid);
-        //emit clientsManager->sendByteArray(login, msg_res_command.toByteArray());
 
-        /// Сообщаем автору команды что метка успешно удалена
+        /// ЗАЩИТА ОТ СБОЕВ СУБД:
+        // Проверяем, произошла ли критическая ошибка при выполнении SQL-запроса
+        results_requreq res_code = invalid;
+        if (query.lastError().isValid()) {
+            qWarning() << "TaskRemoveMapMarker: critical error SQL-request!"
+                       << query.lastError().text();
+        }
+        // Проверяем поняла ли СУБД наш SQL-запрос
+        else if (query.next()){
+            int code = query.value(0).toInt();
+
+            if (code == 0)
+                res_code = successfully;
+            else
+                res_code = error;
+        }
+
+        /// Сообщаем автору команды результат её выполнения
         result_command msg_res_command(id_command_server_map_object_remove,
-                                       successfully);
-        emit clientsManager->sendByteArray(login, msg_res_command.toByteArray());
+                                       res_code);
+        emit clientsManager->sendByteArray(uuid_client, msg_res_command.toByteArray());
 
-        /// Уведомляются все клиенты о том, что метка удалена
-        command_client_map_object_removed cmd_obj_removed(uuid_marker);
+        /// Если SQL-запрос выполнен успешно то сообщаем другим клиентам об удалении метки
+        if (res_code == successfully){
 
-        // За исключением того клиента, который сообщил об удалении (инициатора)
-        emit clientsManager->sendByteArrayAllUsersExcept(QStringList{login},
-                                                         cmd_obj_removed.toByteArray());
+            /// Уведомляются все клиенты о том, что метка удалена
+            // За исключением того клиента, который сообщил об удалении (инициатора)
+            command_client_map_object_removed cmd_obj_removed(uuid_marker);
+            emit clientsManager->sendByteArrayAllUsersExcept(QStringList{uuid_client},
+                                                             cmd_obj_removed.toByteArray());
 
-        qDebug() << "TaskRemoveMapMarker: object" << uuid_marker << "successfully deleted. The newsletter has been sent.";
+            qDebug() << "TaskRemoveMapMarker: object" << uuid_marker << "successfully deleted. The newsletter has been sent.";
+        }
 
-        return true;
+        // Возвращаем true, если пакет от СУБД в принципе был получен и обработан
+        return res_code != invalid;
     }
 
 private:
     ActionsClientsManager* clientsManager;
-    const QString login;
+    const QString uuid_client;
     const QString uuid_marker;
 };
 

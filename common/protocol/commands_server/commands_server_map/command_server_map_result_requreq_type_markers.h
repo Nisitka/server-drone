@@ -11,8 +11,8 @@ namespace server_protocol {
 
 /// Ответ серверу от клиента: получил (или не смог получить) типы меток
 // snapshot - нужен чтоб сервер учитывал по состоянию на какое время клиент знает об типах
-class command_server_map_result_requreq_type_markers : public protocol_message,
-                                                       public command {
+class command_server_map_result_requreq_type_markers:   public protocol_message,
+                                                        public command {
 public:
 
     /// ПРИЕМ НА СЕРВЕРЕ

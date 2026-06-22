@@ -23,7 +23,7 @@ protected:
 
 };
 
-/// Универсальный ответ для любой команды
+/// ---- Универсальный ответ для любой команды ----
 class result_command: public protocol_message{
 
 public:
@@ -52,7 +52,7 @@ public:
         } else return;
     }
 
-    result_command(uint8_t id_command_, results_requreq result_code_, uint8_t info_id = 255):
+    result_command(uint8_t id_command_, results_requreq result_code_, uint8_t info_id = 0):
         protocol_message(id_msg_result_command),
         id_command(id_command_), result_code(result_code_), id_info(info_id)
     {
@@ -60,6 +60,10 @@ public:
         data.append(static_cast<char>(result_code));
         data.append(static_cast<char>(id_info));
     }
+
+    uint8_t id_cmd() const {return id_command;}
+    results_requreq code_result() const {return result_code;}
+    uint8_t info() const {return id_info;}
 
 private:
     uint8_t id_command;

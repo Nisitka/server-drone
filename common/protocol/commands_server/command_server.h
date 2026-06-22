@@ -16,15 +16,21 @@ enum id_command_server: uint8_t{
     id_command_server_user_auth               = 10,
     id_command_server_user_requreq_info_users = 11,
 
-    /// Команды, связанные с картой
+    /// ------- Команды, связанные с картой -------------------
+    // Метки
     id_command_server_map_object_create        = 101,
     id_command_server_map_object_remove        = 102,
     id_command_server_map_object_update        = 103,
     id_command_server_map_object_set_position  = 104,
     id_command_server_map_requreq_objects      = 100,
 
-    id_command_server_map_requreq_type_markers        = 109,
-    id_command_server_map_result_requreq_type_markers = 110,
+    // Типы меток
+    id_command_server_map_requreq_type_markers        = 110,
+    id_command_server_map_result_requreq_type_markers = 111,
+    id_command_server_map_create_type_markers         = 112,
+    id_command_server_map_remove_type_markers         = 113,
+    id_command_server_map_update_type_markers         = 114,
+    /// -------------------------------------------------------
 };
 
 /**

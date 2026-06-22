@@ -57,8 +57,6 @@ public:
         data_marker.appendToByteArray(data);
     }
 
-    // Удаляем переопределение toByteArray() — теперь всё делает базовый класс.
-
     const data_map_marker& getDataMarker() const {
         return data_marker;
     }

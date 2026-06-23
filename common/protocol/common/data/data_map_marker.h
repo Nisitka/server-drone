@@ -21,6 +21,80 @@
 
 namespace server_protocol {
 
+// Структура для передачи актуальных (живых) типов меток
+struct data_type_marker_record {
+
+    // Конструктор по умолчанию
+    data_type_marker_record() = default;
+
+    // Конструктор десериализации (Извлекает данные из массива байт)
+    data_type_marker_record(const QByteArray& data, int& offset) {
+        int totalSize = data.size();
+
+        // Читаем размер цепочки (2 байта, Big-Endian)
+        if (offset + 2 > totalSize) return;
+        uint16_t rawChainSize;
+        std::memcpy(&rawChainSize, data.constData() + offset, sizeof(uint16_t));
+        offset += 2;
+        uint16_t chainSize = qFromBigEndian(rawChainSize);
+
+        // Читаем саму цепочку типов
+        if (offset + chainSize > totalSize) return;
+        hierarchy_chain.reserve(chainSize);
+        for (uint16_t j = 0; j < chainSize; ++j) {
+            hierarchy_chain.append(static_cast<uint8_t>(data.at(offset)));
+            offset += 1;
+        }
+
+        // Название типа
+        name = readStringFromByteArray(data, offset);
+
+        // Размер иконки (4 байта, Big-Endian)
+        if (offset + 4 > totalSize) return;
+        uint32_t rawIconSize;
+        std::memcpy(&rawIconSize, data.constData() + offset, sizeof(uint32_t));
+        offset += 4;
+        uint32_t iconSize = qFromBigEndian(rawIconSize);
+
+        // Сырые байты иконки
+        if (offset + iconSize > totalSize) return;
+        iconBytes = data.mid(offset, iconSize);
+        offset += iconSize;
+    }
+
+    QByteArray toByteArray() const{
+
+        // Оптимизация аллокации: примерно 2 КБ под картинку + метаданные
+        QByteArray result;
+        result.reserve(2 + hierarchy_chain.size() + name.size() * 2 + 4 + iconBytes.size());
+
+        // Кол-во типов
+        uint16_t chainSize = static_cast<uint16_t>(hierarchy_chain.size());
+        uint16_t networkChainSize = qToBigEndian(chainSize);
+        result.append(reinterpret_cast<const char*>(&networkChainSize), sizeof(uint16_t));
+
+        // Цепочка типов
+        for (uint8_t id: hierarchy_chain) {
+            result.append(static_cast<char>(id));
+        }
+
+        // Название типа
+        appendStringToByteArray(name, result);
+
+        // Сырые данные иконки типа
+        uint32_t iconSize = static_cast<uint32_t>(iconBytes.size());
+        uint32_t networkIconSize = qToBigEndian(iconSize);
+        result.append(reinterpret_cast<const char*>(&networkIconSize), sizeof(uint32_t));
+        result.append(iconBytes);
+
+        return result;
+    }
+
+    QList<uint8_t> hierarchy_chain;
+    QString name;
+    QByteArray iconBytes; // Бинарные данные файла иконки
+};
+
 class data_map_marker {
 public:
     data_map_marker(const QString& uuid_,
@@ -120,7 +194,7 @@ public:
         m_isEmpty = false;
     }
 
-    data_map_marker() : m_isEmpty(true), lat(0.0), lon(0.0) {}
+    data_map_marker(): m_isEmpty(true), lat(0.0), lon(0.0) {}
 
     void appendToByteArray(QByteArray& byteArray) const {
         // uuid

@@ -43,7 +43,7 @@ public:
             command_client_map_result_requreq_type_markers cmd(
                 invalid,
                 QDateTime::currentDateTime(),
-                QList<command_client_map_result_requreq_type_markers::TypeRecord>{},
+                QList<data_type_marker_record>{},
                 QList<QList<uint8_t>>{}
                 );
             emit clientsManager->sendByteArray(uuid_client, cmd.toByteArray());
@@ -56,7 +56,7 @@ public:
         }
         else {
             // Новые/обновленные типы
-            QList<command_client_map_result_requreq_type_markers::TypeRecord> types_list;
+            QList<data_type_marker_record> types_list;
             // Типы, которые удалили
             QList<QList<uint8_t>> deleted_chains_list;
 
@@ -83,7 +83,7 @@ public:
                 const QString name_type = query.value(0).toString();
                 const QByteArray iconBytes = query.value(1).toByteArray();
 
-                command_client_map_result_requreq_type_markers::TypeRecord record;
+                data_type_marker_record record;
                 record.hierarchy_chain = hierarchy_chain;
                 record.name = name_type;
                 record.iconBytes = iconBytes;
@@ -108,7 +108,7 @@ private:
     bool proccesingRequestResult_forcedRequred(QSqlQuery& query) const
     {
         // В случае полного дерева удаления игнорируются
-        QList<command_client_map_result_requreq_type_markers::TypeRecord> types_list;
+        QList<data_type_marker_record> types_list;
 
         while (query.next())
         {
@@ -120,7 +120,7 @@ private:
             const QString name_type = query.value(0).toString();
             const QByteArray iconBytes = query.value(1).toByteArray();
 
-            command_client_map_result_requreq_type_markers::TypeRecord record;
+            data_type_marker_record record;
             record.hierarchy_chain = hierarchy_chain;
             record.name = name_type;
             record.iconBytes = iconBytes;

@@ -46,7 +46,7 @@ public:
 
         // Дата и время снимка данных
         const QString dtStr = readStringFromByteArray(data, offset);
-        snapshot = QDateTime::fromString(dtStr, data_map_marker::format_lastUpdate);
+        snapshot = QDateTime::fromString(dtStr, data_map_marker::format_lastUpdate());
 
         if (!snapshot.isValid()) {
             qWarning() << "command_server_map_result_requreq_type_markers: Received invalid snapshot QDateTime string:" << dtStr;
@@ -74,7 +74,7 @@ public:
         data.append(static_cast<char>(result));
 
         // Добавляем дату и время снимка данных (строки запишутся с 2 байтами длины в Big-Endian)
-        appendStringToByteArray(snapshot.toString(data_map_marker::format_lastUpdate), data);
+        appendStringToByteArray(snapshot.toString(data_map_marker::format_lastUpdate()), data);
     }
 
     // На случай удаления через интерфейсы
@@ -82,7 +82,7 @@ public:
 
     // Геттеры
     QDateTime getSnapshot() const { return snapshot; }
-    results_requreq getResult() const { return result; } // ИСПРАВЛЕНО: Избавились от принудительного каста (results_requreq)
+    results_requreq getResult() const { return result; }
 
     // Функция проверки: успешно ли распарсился пакет
     bool isValid() const { return m_isValid; }

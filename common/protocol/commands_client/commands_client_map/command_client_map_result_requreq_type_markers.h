@@ -4,19 +4,13 @@
 #include "../../../protocol/command.h"
 #include "../../../protocol/protocol_message.h"
 #include "../command_client.h"
-#include "../../common/data/data_map_marker.h" // Нужен для appendStringToByteArray / readStringFromByteArray
+#include "../../common/data/data_map_marker.h"
 
 namespace server_protocol {
 
-class command_client_map_result_requreq_type_markers:   public protocol_message,
-                                                        public command {
+class command_client_map_result_requreq_type_markers : public protocol_message,
+                                                       public command {
 public:
-    // Структура для передачи актуальных (живых) типов меток
-    struct TypeRecord {
-        QList<uint8_t> hierarchy_chain;
-        QString name;
-        QByteArray iconBytes; // Бинарные данные файла иконки (PNG/SVG)
-    };
 
     /// ПРИЕМ НА КЛИЕНТЕ (Десериализация)
     explicit command_client_map_result_requreq_type_markers(const QByteArray& bodyData) :
@@ -39,7 +33,7 @@ public:
             return;
         }
 
-        // Считываем 1 байт результата (result)
+        // Считываем результат запроса типов (1 байт)
         if (offset + 1 <= totalSize) {
             result = static_cast<results_requreq>(data.at(offset));
             offset += 1;
@@ -48,11 +42,16 @@ public:
             return;
         }
 
-        // Если сервер ответил ошибкой, прерываем чтение. Пакет валиден, но пуст.
+        // Если сервер ответил ошибкой, прерываем чтение
         if (result == invalid) {
             m_isValid = true;
             return;
         }
+
+        // Читаем дату и время снимка данных
+        const QString dtStr = readStringFromByteArray(data, offset);
+        snapshot = QDateTime::fromString(dtStr, data_map_marker::format_lastUpdate());
+        if (!snapshot.isValid()) return;
 
         // Читаем количество ЖИВЫХ типов (2 байта, Big-Endian)
         if (offset + 2 > totalSize) return;
@@ -61,21 +60,15 @@ public:
         offset += 2;
         count_type_markers = qFromBigEndian(rawLiveCount);
 
-        // Дата и время снимка данных
-        const QString dtStr = readStringFromByteArray(data, offset);
-        snapshot = QDateTime::fromString(dtStr, data_map_marker::format_lastUpdate());
-        if (!snapshot.isValid()) return;
-
-        // ИНТЕГРАЦИЯ ВАРИАНТА 2: Читаем количество УДАЛЕННЫХ цепочек (2 байта, Big-Endian)
+        // Читаем количество УДАЛЕННЫХ цепочек (2 байта, Big-Endian)
         if (offset + 2 > totalSize) return;
         uint16_t rawDeletedCount;
         std::memcpy(&rawDeletedCount, data.constData() + offset, sizeof(uint16_t));
         offset += 2;
         uint16_t deletedCount = qFromBigEndian(rawDeletedCount);
 
-        deleted_chains_list.reserve(deletedCount);
-
         // Цикл парсинга удаленных цепочек
+        deleted_chains_list.reserve(deletedCount);
         for (uint16_t i = 0; i < deletedCount; ++i) {
             if (offset + 2 > totalSize) return;
             uint16_t rawChainSize;
@@ -93,39 +86,11 @@ public:
             deleted_chains_list.append(chain);
         }
 
-        // Цикл парсинга ЖИВЫХ типов меток (Ваш старый код)
+        // Парсинг живых типов
         type_markers_list.reserve(count_type_markers);
         for (uint16_t i = 0; i < count_type_markers; ++i) {
-            if (offset + 2 > totalSize) return;
-            uint16_t rawChainSize;
-            std::memcpy(&rawChainSize, data.constData() + offset, sizeof(uint16_t));
-            offset += 2;
-            uint16_t chainSize = qFromBigEndian(rawChainSize);
-
-            if (offset + chainSize > totalSize) return;
-            QList<uint8_t> chain;
-            chain.reserve(chainSize);
-            for (uint16_t j = 0; j < chainSize; ++j) {
-                chain.append(static_cast<uint8_t>(data.at(offset)));
-                offset += 1;
-            }
-
-            QString name = readStringFromByteArray(data, offset);
-
-            if (offset + 4 > totalSize) return;
-            uint32_t rawIconSize;
-            std::memcpy(&rawIconSize, data.constData() + offset, sizeof(uint32_t));
-            offset += 4;
-            uint32_t iconSize = qFromBigEndian(rawIconSize);
-
-            if (offset + iconSize > totalSize) return;
-
-            TypeRecord record;
-            record.hierarchy_chain = chain;
-            record.name = name;
-            record.iconBytes = data.mid(offset, iconSize);
-            offset += iconSize;
-
+            // Вызываем конструктор десериализации структуры, она сама сдвинет offset
+            data_type_marker_record record(data, offset);
             type_markers_list.append(record);
         }
 
@@ -135,7 +100,7 @@ public:
     /// ОТПРАВКА С СЕРВЕРА (Сериализация ответа)
     command_client_map_result_requreq_type_markers(results_requreq result_,
                                                    const QDateTime& snapshot_,
-                                                   const QList<TypeRecord>& liveTypesList,
+                                                   const QList<data_type_marker_record>& liveTypesList,
                                                    const QList<QList<uint8_t>>& deletedChainsList) :
         protocol_message(id_msg_command_client),
         command(id_command_client_map_result_requreq_type_markers),
@@ -146,7 +111,6 @@ public:
         type_markers_list(liveTypesList),
         deleted_chains_list(deletedChainsList)
     {
-        // Резервируем память (заголовок + живые типы + удаленные типы)
         data.reserve(1 + 1 + 2 + 30 + 2 + (deleted_chains_list.size() * 4) + (type_markers_list.size() * 1024));
 
         // Код команды (1 байт)
@@ -155,17 +119,16 @@ public:
         // Результат запроса (1 байт)
         data.append(static_cast<char>(result));
 
-        // Если результат неуспешный, прекращаем сборку полезной нагрузки
         if (result == invalid) {
             return;
         }
 
+        // НОВАЯ ПОСЛЕДОВАТЕЛЬНОСТЬ: Дата и время снимка данных по сети идет сразу за результатом
+        appendStringToByteArray(snapshot.toString(data_map_marker::format_lastUpdate()), data);
+
         // Количество ЖИВЫХ типов (2 байта, Big-Endian)
         uint16_t networkLiveCount = qToBigEndian(count_type_markers);
         data.append(reinterpret_cast<const char*>(&networkLiveCount), sizeof(uint16_t));
-
-        // Дата и время снимка данных
-        appendStringToByteArray(snapshot.toString(data_map_marker::format_lastUpdate()), data);
 
         // Количество УДАЛЕННЫХ цепочек (2 байта, Big-Endian)
         uint16_t deletedCount = static_cast<uint16_t>(deleted_chains_list.size());
@@ -173,32 +136,19 @@ public:
         data.append(reinterpret_cast<const char*>(&networkDeletedCount), sizeof(uint16_t));
 
         // Сериализация УДАЛЕННЫХ цепочек
-        for (const QList<uint8_t>& chain : deleted_chains_list) {
+        for (const QList<uint8_t>& chain: deleted_chains_list) {
             uint16_t chainSize = static_cast<uint16_t>(chain.size());
             uint16_t networkChainSize = qToBigEndian(chainSize);
             data.append(reinterpret_cast<const char*>(&networkChainSize), sizeof(uint16_t));
 
-            for (uint8_t id : chain) {
+            for (uint8_t id: chain) {
                 data.append(static_cast<char>(id));
             }
         }
 
-        // Сериализация ЖИВЫХ типов
-        for (const TypeRecord& record : type_markers_list) {
-            uint16_t chainSize = static_cast<uint16_t>(record.hierarchy_chain.size());
-            uint16_t networkChainSize = qToBigEndian(chainSize);
-            data.append(reinterpret_cast<const char*>(&networkChainSize), sizeof(uint16_t));
-
-            for (uint8_t id : record.hierarchy_chain) {
-                data.append(static_cast<char>(id));
-            }
-
-            appendStringToByteArray(record.name, data);
-
-            uint32_t iconSize = static_cast<uint32_t>(record.iconBytes.size());
-            uint32_t networkIconSize = qToBigEndian(iconSize);
-            data.append(reinterpret_cast<const char*>(&networkIconSize), sizeof(uint32_t));
-            data.append(record.iconBytes);
+        // Cериализация ЖИВЫХ типов
+        for (const data_type_marker_record& record: type_markers_list) {
+            data.append(record.toByteArray());
         }
     }
 
@@ -208,8 +158,8 @@ public:
     results_requreq getResult() const { return result; }
     uint16_t getCountTypeMarkers() const { return count_type_markers; }
     QDateTime getSnapshot() const { return snapshot; }
-    QList<TypeRecord> getTypeMarkersList() const { return type_markers_list; }
-    QList<QList<uint8_t>> getDeletedChainsList() const { return deleted_chains_list; } // Новый геттер
+    QList<data_type_marker_record> getTypeMarkersList() const { return type_markers_list; }
+    QList<QList<uint8_t>> getDeletedChainsList() const { return deleted_chains_list; }
 
     bool isValid() const { return m_isValid && snapshot.isValid(); }
 
@@ -218,8 +168,9 @@ private:
     uint16_t count_type_markers;
     QDateTime snapshot;
     bool m_isValid;
-    QList<TypeRecord> type_markers_list;
-    QList<QList<uint8_t>> deleted_chains_list; // Массив удаленных веток иерархии
+
+    QList<data_type_marker_record> type_markers_list;
+    QList<QList<uint8_t>> deleted_chains_list;
 };
 
 } // namespace server_protocol

@@ -9,13 +9,12 @@
 namespace server_protocol {
 
 /// Запросить данные о типах меток
-class command_server_map_requreq_type_markers : public protocol_message,
+class command_server_map_requreq_type_markers:  public protocol_message,
                                                 public command {
 public:
 
-
     /// ПРИЕМ НА СЕРВЕРЕ
-    explicit command_server_map_requreq_type_markers(const QByteArray& bodyData) :
+    explicit command_server_map_requreq_type_markers(const QByteArray& bodyData):
         protocol_message(id_msg_command_server),
         command(id_command_server_map_requreq_type_markers),
         isForced(false),
@@ -37,7 +36,7 @@ public:
         if (offset + 1 <= totalSize) {
             // Конвертируем байт в булевое значение (0 — false, всё остальное — true)
             isForced = static_cast<bool>(data.at(offset));
-            offset += 1;
+            ///offset += 1;
         } else {
             qWarning() << "command_server_map_requreq_type_markers: Missing 'isForced' field in packet!";
             return;

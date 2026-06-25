@@ -5,6 +5,8 @@
 #include "../../Network/ActionsClientsManager.h"
 #include "../../../common/protocol/commands_server/commands_server_map/command_server_map_result_requreq_type_markers.h"
 #include <QSqlError>
+#include <QString>
+
 #include <QDebug>
 
 using namespace server_protocol;
@@ -16,8 +18,8 @@ public:
                                 const QString& uuid_client_,
                                 const command_server_map_result_requreq_type_markers& cmd_accepted) :
         TaskDataBase(QString("SELECT * FROM mark_marker_types_synced($$%1$$, $$%2$$);")
-                         .arg(uuid_client_)
-                         .arg(cmd_accepted.getSnapshot().toString(data_map_marker::format_lastUpdate))),
+                        .arg(uuid_client_)
+                        .arg(cmd_accepted.getSnapshot().toString(data_map_marker::format_lastUpdate()))),
         uuid_client(uuid_client_),
         clientsManager(clientsManager_)
     { }

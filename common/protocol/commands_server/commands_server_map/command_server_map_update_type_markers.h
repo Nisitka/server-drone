@@ -10,12 +10,12 @@
 namespace server_protocol {
 
 /// Обновить существующий тип меток (Отправка с клиента на сервер)
-class command_server_map_type_markers_update : public protocol_message,
-                                               public command {
+class command_server_map_update_type_markers:   public protocol_message,
+                                                public command {
 public:
 
     /// ПРИЕМ НА СЕРВЕРЕ (Десериализация)
-    explicit command_server_map_type_markers_update(const QByteArray& bodyData) :
+    explicit command_server_map_update_type_markers(const QByteArray& bodyData) :
         protocol_message(id_msg_command_server),
         command(id_command_server_map_update_type_markers),
         type_marker(),
@@ -29,7 +29,7 @@ public:
         if (offset + 1 <= totalSize) {
             offset += 1;
         } else {
-            qWarning() << "command_server_map_type_markers_update: Data is empty!";
+            qWarning() << "command_server_map_update_type_markers: Data is empty!";
             return;
         }
 
@@ -39,7 +39,7 @@ public:
         // ЗАЩИТА: Проверяем, что структура считалась полностью
         // Тип не может быть обновлен, если у него пустая целевая цепочка или стерто имя
         if (type_marker.hierarchy_chain.isEmpty() || type_marker.name.isEmpty()) {
-            qWarning() << "command_server_map_type_markers_update: Received corrupted or incomplete update record!";
+            qWarning() << "command_server_map_update_type_markers: Received corrupted or incomplete update record!";
             return;
         }
 
@@ -47,7 +47,7 @@ public:
     }
 
     /// ОТПРАВКА С КЛИЕНТА (Сериализация)
-    explicit command_server_map_type_markers_update(const data_type_marker_record& type_marker_) :
+    explicit command_server_map_update_type_markers(const data_type_marker_record& type_marker_):
         protocol_message(id_msg_command_server),
         command(id_command_server_map_update_type_markers),
         type_marker(type_marker_),
@@ -64,7 +64,7 @@ public:
         data.append(serializedRecord);
     }
 
-    virtual ~command_server_map_type_markers_update() override = default;
+    virtual ~command_server_map_update_type_markers() override = default;
 
     // Геттер для извлечения измененной записи типа
     data_type_marker_record get_type_marker() const { return type_marker; }

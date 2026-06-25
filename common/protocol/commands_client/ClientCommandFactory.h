@@ -9,6 +9,7 @@
 #include "../commands_client/commands_client_map/command_client_map_requreq_data_markers.h"
 #include "../commands_client/commands_client_map/command_client_map_object_removed.h"
 #include "../commands_client/commands_client_map/command_client_map_object_update.h"
+#include "../commands_client/commands_client_map/command_client_map_result_requreq_type_markers.h"
 
 #include <memory>
 
@@ -40,6 +41,9 @@ public:
 
         case id_command_client_map_requreq_data_markers:
             return std::make_unique<command_client_map_requreq_data_markers>(bodyData);
+
+        case id_command_client_map_result_requreq_type_markers:
+            return std::make_unique<command_client_map_result_requreq_type_markers>(bodyData);
 
         case id_command_client_unknown:
         default:

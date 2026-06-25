@@ -12,13 +12,23 @@
 #include "../DataBase/Tasks/TaskUpdateMapMarker.h"
 #include "../DataBase/Tasks/TaskCreateMapMarker.h"
 #include "../DataBase/Tasks/TaskRemoveMapMarker.h"
+
 #include "../DataBase/Tasks/TaskRequredTypesMapMarkers.h"
+#include "../DataBase/Tasks/TaskResultAcceptedTypeMarkers.h"
+#include "../DataBase/Tasks/TaskCreateTypeMarker.h"
+#include "../DataBase/Tasks/TaskRemoveTypeMarker.h"
+#include "../DataBase/Tasks/TaskUpdateTypeMarker.h"
 
 #include "../../common/protocol/commands_server/command_server.h"
 #include "../../common/protocol/commands_server/commands_server_map/command_server_map_object_update.h"
 #include "../../common/protocol/commands_server/commands_server_map/command_server_map_object_create.h"
 #include "../../common/protocol/commands_server/commands_server_map/command_server_map_remove_object.h"
+
 #include "../../common/protocol/commands_server/commands_server_map/command_server_map_requreq_type_markers.h"
+#include "../../common/protocol/commands_server/commands_server_map/command_server_map_result_requreq_type_markers.h"
+#include "../../common/protocol/commands_server/commands_server_map/command_server_map_create_type_markers.h"
+#include "../../common/protocol/commands_server/commands_server_map/command_server_map_remove_type_markers.h"
+#include "../../common/protocol/commands_server/commands_server_map/command_server_map_update_type_markers.h"
 
 #include "../../common/protocol/commands_client/commands_client_user/commands_client_user_result_auth.h"
 
@@ -200,11 +210,32 @@ void ClientsManager::processingMsg_command(const QByteArray& bodyData, const QSt
             taskQueue->enqueue(new TaskRemoveMapMarker(Actions(), uuid_client, *cmd));
             break;
         }
-        case id_command_server_map_result_requreq_type_markers: {
+        case id_command_server_map_requreq_type_markers: {
             auto* cmd = static_cast<command_server_map_requreq_type_markers*>(incomingCmd.get());
             taskQueue->enqueue(new TaskRequredTypesMapMarkers(Actions(), uuid_client, *cmd));
             break;
         }
+        case id_command_server_map_result_requreq_type_markers: {
+            auto* cmd = static_cast<command_server_map_result_requreq_type_markers*>(incomingCmd.get());
+            taskQueue->enqueue(new TaskResultAcceptTypeMarkers(Actions(), uuid_client, *cmd));
+            break;
+        }
+        case id_command_server_map_create_type_markers: {
+            auto* cmd = static_cast<command_server_map_create_type_markers*>(incomingCmd.get());
+            taskQueue->enqueue(new TaskCreateTypeMarker(Actions(), uuid_client, *cmd));
+            break;
+        }
+        case id_command_server_map_remove_type_markers: {
+            auto* cmd = static_cast<command_server_map_remove_type_markers*>(incomingCmd.get());
+            taskQueue->enqueue(new TaskRemoveTypeMarker(Actions(), uuid_client, *cmd));
+            break;
+        }
+        case id_command_server_map_update_type_markers: {
+            auto* cmd = static_cast<command_server_map_update_type_markers*>(incomingCmd.get());
+            taskQueue->enqueue(new TaskUpdateTypeMarker(Actions(), uuid_client, *cmd));
+            break;
+        }
+
         default:
             qDebug() << "ClientsManager: For command id =" << id_command << "there is no task handler- data base";
             break;

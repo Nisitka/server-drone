@@ -16,7 +16,7 @@ class TaskUpdateTypeMarker: public TaskDataBase
 public:
     TaskUpdateTypeMarker(ActionsClientsManager* clientsManager_,
                          const QString& uuid_client_,
-                         const command_server_map_type_markers_update& cmd) :
+                         const command_server_map_update_type_markers& cmd) :
         // Передаем сформированный безопасный SQL-запрос обновления в базовый класс
         TaskDataBase(buildQuery(cmd)),
         clientsManager(clientsManager_),
@@ -66,7 +66,7 @@ public:
 
 private:
     // Вспомогательный статический метод для сборки и тотальной защиты SQL-запроса
-    static QString buildQuery(const command_server_map_type_markers_update& cmd) {
+    static QString buildQuery(const command_server_map_update_type_markers& cmd) {
         const data_type_marker_record& record = cmd.get_type_marker();
 
         // Превращаем цепочку QList<uint8_t> в строку иерархии через дефисы ("10-25-3")

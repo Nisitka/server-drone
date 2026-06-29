@@ -11,6 +11,9 @@ namespace server_protocol {
 class command_client_map_result_requreq_type_markers : public protocol_message,
                                                        public command {
 public:
+    enum motive: uint8_t{
+        synced, forced, update
+    };
 
     /// ПРИЕМ НА КЛИЕНТЕ (Десериализация)
     explicit command_client_map_result_requreq_type_markers(const QByteArray& bodyData) :
@@ -41,10 +44,18 @@ public:
             qWarning() << "command_client_map_result_requreq_type_markers: Not enough bytes for 'result'!";
             return;
         }
-
         // Если сервер ответил ошибкой, прерываем чтение
         if (result == invalid) {
             m_isValid = true;
+            return;
+        }
+
+        // Из-за чего отправлено это сообщение клиенту
+        if (offset + 1 <= totalSize) {
+            motive_value = static_cast<motive>(data.at(offset));
+            offset += 1;
+        } else {
+            qWarning() << "command_client_map_result_requreq_type_markers: Not enough bytes for 'motive'!";
             return;
         }
 
@@ -99,12 +110,14 @@ public:
 
     /// ОТПРАВКА С СЕРВЕРА (Сериализация ответа)
     command_client_map_result_requreq_type_markers(results_requreq result_,
+                                                   motive motive_,
                                                    const QDateTime& snapshot_,
                                                    const QList<data_type_marker_record>& liveTypesList,
-                                                   const QList<QList<uint8_t>>& deletedChainsList) :
+                                                   const QList<QList<uint8_t>>& deletedChainsList):
         protocol_message(id_msg_command_client),
         command(id_command_client_map_result_requreq_type_markers),
         result(result_),
+        motive_value(motive_),
         count_type_markers(static_cast<uint16_t>(liveTypesList.size())),
         snapshot(snapshot_),
         m_isValid(true),
@@ -118,10 +131,12 @@ public:
 
         // Результат запроса (1 байт)
         data.append(static_cast<char>(result));
-
         if (result == invalid) {
             return;
         }
+
+        // Из-за чего отправлено это сообщение клиенту
+        data.append(static_cast<char>(motive_value));
 
         // НОВАЯ ПОСЛЕДОВАТЕЛЬНОСТЬ: Дата и время снимка данных по сети идет сразу за результатом
         appendStringToByteArray(snapshot.toString(data_map_marker::format_lastUpdate()), data);
@@ -160,11 +175,12 @@ public:
     QDateTime getSnapshot() const { return snapshot; }
     QList<data_type_marker_record> getTypeMarkersList() const { return type_markers_list; }
     QList<QList<uint8_t>> getDeletedChainsList() const { return deleted_chains_list; }
-
     bool isValid() const { return m_isValid && snapshot.isValid(); }
+    motive getMotive() const { return motive_value; };
 
 private:
     results_requreq result;
+    motive motive_value;
     uint16_t count_type_markers;
     QDateTime snapshot;
     bool m_isValid;

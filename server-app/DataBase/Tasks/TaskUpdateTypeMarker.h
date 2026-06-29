@@ -6,6 +6,8 @@
 #include "./taskdatabase.h"
 #include "../../Network/ActionsClientsManager.h"
 #include "../../../common/protocol/commands_server/commands_server_map/command_server_map_update_type_markers.h"
+#include "../../../common/protocol/commands_client/commands_client_map/command_client_map_result_requreq_type_markers.h"
+
 #include <QSqlError>
 #include <QDebug>
 
@@ -59,6 +61,19 @@ public:
         if (res_code == successfully) {
             qDebug() << "TaskUpdateTypeMarker: Данные типа меток успешно обновлены в БД:"
                      << type_record.name << type_record.hierarchy_chain;
+
+            // Тип, который только что создали
+            QList<data_type_marker_record> changed_type = { type_record };
+
+            // На какой момент времени будет отправлено состояние типов
+            QDateTime date_time = QDateTime::currentDateTime();
+            results_requreq result = successfully;
+
+            // По какой причине был запрос типов
+            command_client_map_result_requreq_type_markers::motive m_motive = command_client_map_result_requreq_type_markers::update;
+
+            command_client_map_result_requreq_type_markers cmd(result, m_motive, date_time, changed_type, QList<QList<uint8_t>>{});
+            emit clientsManager->sendByteArrayAllUsersExcept(QStringList{}, cmd.toByteArray());
         }
 
         return res_code != invalid;

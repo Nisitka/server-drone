@@ -6,6 +6,7 @@
 #include "./taskdatabase.h"
 #include "../../Network/ActionsClientsManager.h"
 #include "../../../common/protocol/commands_server/commands_server_map/command_server_map_remove_type_markers.h"
+#include "../../../common/protocol/commands_client/commands_client_map/command_client_map_result_requreq_type_markers.h"
 #include "../../../common/protocol/common/data/data_map_marker.h"
 
 #include <QSqlError>
@@ -57,8 +58,22 @@ public:
         emit clientsManager->sendByteArray(uuid_client, msg_res_command.toByteArray());
 
         if (res_code == successfully) {
-            qDebug() << "TaskRemoveTypeMarker: Тип меток успешно удален (помечен как удаленный) в БД:"
+            qDebug() << "TaskRemoveTypeMarker: Marker's type successfully removed:"
                      << hierarchy_chain;
+
+            // Тип, который только что создали
+            QList<QList<uint8_t>>deleted_type;
+            deleted_type.append(hierarchy_chain);
+
+            // На какой момент времени будет отправлено состояние типов
+            QDateTime date_time = QDateTime::currentDateTime();
+            results_requreq result = successfully;
+
+            // По какой причине был запрос типов
+            command_client_map_result_requreq_type_markers::motive m_motive = command_client_map_result_requreq_type_markers::update;
+
+            command_client_map_result_requreq_type_markers cmd(result, m_motive, date_time, QList<data_type_marker_record>{}, deleted_type);
+            emit clientsManager->sendByteArrayAllUsersExcept(QStringList{}, cmd.toByteArray());
         }
 
         return res_code != invalid;
@@ -68,7 +83,7 @@ private:
     // Вспомогательный статический метод для чистой сборки SQL-запроса
     static QString buildQuery(const command_server_map_remove_type_markers& cmd) {
 
-        // Конвертируем QList<uint8_t> в строку иерархии через дефисы ("10-25-3")
+        // Конвертируем QList<uint8_t> в строку иерархии через дефисы
         QString hierarchyStr = data_map_marker::makeHierarchyString(cmd.getHierarchyChain());
 
         return QString("SELECT * FROM __RemoveMarkerType($$%1$$);").arg(hierarchyStr);

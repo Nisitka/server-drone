@@ -9,20 +9,20 @@ class ActionsClientsManager: public QObject
     Q_OBJECT
 signals:
     // Добавить клиента
-    void addClient(const QString& login,
+    void addClient(const QString& uuid_client,
                    const QString& nickname,
                    ISocketAdapter* clientSock);
 
     // Отправить сообщение клиенту
-    void sendByteArray(const QString& login,
+    void sendByteArray(const QString& uuid_client,
                        const QByteArray& data);
 
     // Отправить конкретным пользователям
-    void sendByteArrayToUsers(const QStringList& logins,
+    void sendByteArrayToUsers(const QStringList& uuid_clients,
                               const QByteArray& data);
 
     // Отправить всем клиентам за исключением определенных
-    void sendByteArrayAllUsersExcept(const QStringList& excepted_logins,
+    void sendByteArrayAllUsersExcept(const QStringList& excepted_uuid_clients,
                                      const QByteArray& data);
 };
 

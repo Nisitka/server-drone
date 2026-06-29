@@ -39,9 +39,15 @@ public:
             qWarning() << "TaskRequredTypesMapMarkers: critical error SQL-request!"
                        << query.lastError().text();
 
+            // Все равно сообщаем по какой причине был запрос типов
+            command_client_map_result_requreq_type_markers::motive m_motive;
+            if (isForced) m_motive = command_client_map_result_requreq_type_markers::forced;
+            else m_motive = command_client_map_result_requreq_type_markers::synced;
+
             // Отправляем клиенту статус invalid, так как запрос физически сломался
             command_client_map_result_requreq_type_markers cmd(
                 invalid,
+                m_motive,
                 QDateTime::currentDateTime(),
                 QList<data_type_marker_record>{},
                 QList<QList<uint8_t>>{}
@@ -91,13 +97,16 @@ public:
                 types_list.append(record);
             }
 
-            // Компануем команду клиенту
+            // На какой момент времени будет отправлено состояние типов
             QDateTime date_time = QDateTime::currentDateTime();
 
             // Если дельта пустая (изменений нет) — отправляем статус successfully и пустые списки
             results_requreq result = successfully;
 
-            command_client_map_result_requreq_type_markers cmd(result, date_time, types_list, deleted_chains_list);
+            // По какой причине был запрос типов
+            command_client_map_result_requreq_type_markers::motive m_motive = command_client_map_result_requreq_type_markers::synced;
+
+            command_client_map_result_requreq_type_markers cmd(result, m_motive, date_time, types_list, deleted_chains_list);
             emit clientsManager->sendByteArray(uuid_client, cmd.toByteArray());
 
             return true;
@@ -137,7 +146,9 @@ private:
             result = error;
         }
 
-        command_client_map_result_requreq_type_markers cmd(result, date_time, types_list, QList<QList<uint8_t>>{});
+        // По какой причине был запрос типов
+        command_client_map_result_requreq_type_markers::motive m_motive = command_client_map_result_requreq_type_markers::forced;
+        command_client_map_result_requreq_type_markers cmd(result, m_motive, date_time, types_list, QList<QList<uint8_t>>{});
         emit clientsManager->sendByteArray(uuid_client, cmd.toByteArray());
 
         return true;

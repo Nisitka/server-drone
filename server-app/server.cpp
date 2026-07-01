@@ -11,6 +11,7 @@
 #include <QFile>
 
 #include <QDebug>
+#include <iostream>
 
 // Подключаем фабрику серверных команд
 #include "../common/protocol/commands_server/ServerCommandFactory.h"
@@ -46,12 +47,17 @@ Server::Server(QObject *parent) :
     if (readConfig()) {
         // Обработчики задач связанных с БД
         int executor_count = configParams["executor_count"].toInt();
-        if (executor_count > 8) executor_count = 8;
+        if (executor_count > 20) executor_count = 20;
 
         for (int i = 0; i < executor_count; i++) {
+            /// Запуск обработчика задач
             TaskDataBaseExecutor* executer = new TaskDataBaseExecutor(taskQueue);
             connect(this,     &Server::runSqlExecuters,
                     executer, &TaskDataBaseExecutor::run);
+
+            // Контроль критических ошибок
+            connect(executer, &TaskDataBaseExecutor::critical_error,
+                    this,     &Server::shutdown);
 
             QThread* thread = new QThread(this); // Добавлен родитель для контроля памяти threads
             executer->moveToThread(thread);
@@ -59,8 +65,8 @@ Server::Server(QObject *parent) :
 
             sqlExecuters.append(executer);
 
-            //
-            QThread::msleep(100);
+            /// Задержка
+            QThread::msleep(200);
         }
 
         if (run())
@@ -68,6 +74,22 @@ Server::Server(QObject *parent) :
         else
             qDebug() << "Server: error run!";
     }
+}
+
+void Server::shutdown(ServerErrors::code_errors code, const QString& info)
+{
+    // Вывод текста ошибки в стандартный поток ошибок
+    switch (code) {
+    case ServerErrors::connect_to_database:
+        std::cerr << "[CRITICAL] - error connect to database:" << info.toStdString() << std::endl;
+        break;
+    default:
+        std::cerr << "[CRITICAL] - unknown error..." << info.toStdString() << std::endl;
+        break;
+    }
+
+    // Завершение с кодом ошибки для systemd
+    std::exit(EXIT_FAILURE);
 }
 
 void Server::incomingConnection(qintptr socketDescriptor)

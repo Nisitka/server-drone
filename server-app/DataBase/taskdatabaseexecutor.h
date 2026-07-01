@@ -6,13 +6,15 @@
 
 #include "./Tasks/queuetaskdb.h"
 
+#include "../serverErrors.h"
+
 // Обработчик задач
 class TaskDataBaseExecutor: public QObject
 {
     Q_OBJECT
 signals:
     //
-    void error();
+    void critical_error(ServerErrors::code_errors code_error, const QString& info = "");
 
     //
     void finished();
@@ -27,7 +29,11 @@ public slots:
 public:
     TaskDataBaseExecutor(QueueTaskDB* taskQueue);
 
+    QString getLastError() const { return lastError; }
+
 private:
+    QString lastError;
+
     QueueTaskDB* taskQueue;
 
     //

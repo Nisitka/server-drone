@@ -26,9 +26,9 @@ public:
     bool processRequestResult(QSqlQuery& query) override final
     {
         // ОБРАБОТКА ОШИБОК СУБД: Если база данных PostgreSQL заблокирована или упала
-        if (query.lastError().isValid()) {
-            qWarning() << "TaskUserAuth: Критическая ошибка базы данных при попытке входа для:" << login
-                       << "| Ошибка:" << query.lastError().text();
+        if (!query.lastError().isValid()) {
+            qWarning() << "TaskUserAuth: Critical database error when trying to log in for:" << login
+                       << "| error:" << query.lastError().text();
 
             // Отправляем системный сбой пакета/сервера
             sendAuthResult(command_client_user_result_auth::invalid);

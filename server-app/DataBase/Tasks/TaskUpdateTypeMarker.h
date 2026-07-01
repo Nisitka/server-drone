@@ -30,7 +30,7 @@ public:
     {
         // Проверяем системные ошибки СУБД (например, потеря связи с PostgreSQL)
         if (query.lastError().isValid()) {
-            qWarning() << "TaskUpdateTypeMarker: Критическая ошибка СУБД при обновлении типа!"
+            qWarning() << "TaskUpdateTypeMarker: Critical database error when updating the type!"
                        << query.lastError().text();
 
             // Отправляем клиенту-автору статус invalid (системный сбой)
@@ -50,7 +50,7 @@ public:
                 res_code = error; // Ошибка бизнес-логики (например, обновляемый тип не найден в таблице)
             }
         } else {
-            qWarning() << "TaskUpdateTypeMarker: СУБД вернула пустой результат!";
+            qWarning() << "TaskUpdateTypeMarker: database return empty result!";
             res_code = error;
         }
 

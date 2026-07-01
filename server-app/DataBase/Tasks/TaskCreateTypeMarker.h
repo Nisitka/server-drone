@@ -28,7 +28,7 @@ public:
     {
         // Проверяем, не упала ли СУБД из-за системной ошибки
         if (query.lastError().isValid()) {
-            qWarning() << "TaskCreateTypeMarker: Критическая ошибка СУБД при создании типа!"
+            qWarning() << "TaskCreateTypeMarker: A critical DBMS error when creating a type!"
                        << query.lastError().text();
 
             // Отправляем автору статус ошибки пакета/сервера (invalid)
@@ -57,7 +57,7 @@ public:
         emit clientsManager->sendByteArray(uuid_client, msg_res_command.toByteArray());
 
         if (res_code == successfully) {
-            qDebug() << "TaskCreateTypeMarker: Новый тип меток успешно создан в БД:"
+            qDebug() << "TaskCreateTypeMarker: A new type of tags has been successfully created in the database:"
                      << type_record.name << type_record.hierarchy_chain;
 
             /// !!!!

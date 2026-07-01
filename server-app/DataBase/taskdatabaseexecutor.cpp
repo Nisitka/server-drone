@@ -25,7 +25,8 @@ bool TaskDataBaseExecutor::connectToDataBase(const QString& host, int port,
     db.setPassword(password);
 
     if (!db.open()) {
-        qDebug() << "BaseExecutor: error connect (" << connName << "):" << db.lastError().text();
+        lastError = "BaseExecutor: error connect (" + connName + "): " + db.lastError().text();
+        qDebug() << lastError;
         return false;
     }
 
@@ -39,7 +40,7 @@ void TaskDataBaseExecutor::run(const QString& host, int port,
     /// Подключение к БД
     if (!connectToDataBase(host, port, dbName, user, password))
     {
-        emit error();
+        emit critical_error(ServerErrors::connect_to_database, lastError);
         return;
     }
 

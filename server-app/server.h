@@ -19,9 +19,14 @@ signals:
                        const QString& dbName,
                        const QString& user, const QString& password);
 
+public slots:
+  void shutdown(ServerErrors::code_errors, const QString& info);
+
 public:
     explicit Server(QObject *parent = nullptr);
     ~Server();
+
+
 
     void runTest();
 
